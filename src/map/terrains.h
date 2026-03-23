@@ -1,16 +1,21 @@
+#pragma once
 
 enum class TerrainsType {
-    Coast,
-    Desert,
-    Grassland,
-    Mountains,
-    Ocean,
-    Plains,
-    Snow,
+  CoastLake,
+  Desert,
+  Grassland,
+  Mountains,
+  Ocean,
+  Plains,
+  Snow
 };
 
 class Terrains {
-    private:
-        TerrainsType terrains_type;
-        // int debuff;
+ public:
+  Terrains() = default;
+  Terrains(TerrainsType type);
+
+ private:
+  TerrainsType _type;
+  // int debuff;
 };
