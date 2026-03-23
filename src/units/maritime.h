@@ -2,6 +2,6 @@
 
 class Maritime : public Unit {
  public:
-  Maritime(int pv, int speed, int power, int defense,
-           std::vector<TerrainsType> allow_terrain);
+  Maritime(std::string name, Country country, int pv, int speed, int power,
+           int defense, int range, std::vector<TerrainsType> allow_terrain);
 };

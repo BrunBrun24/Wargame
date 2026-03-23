@@ -3,17 +3,28 @@
 
 #include "terrains.h"
 
-enum Team { Default, Rouge, Bleu };
+enum class Country {
+  France,
+  Germany,
+  UnitedKingdom,
+  Russia,
+  Egypt,
+  Switzerland,
+  Japan,
+  Spain,
+  Italy,
+  UnitedStates
+};
 
 class Unit {
  public:
-  Unit(int pv, int speed, int power, int defense,
-       std::vector<TerrainsType> allow_terrain);
+  Unit(std::string name, Country country, int pv, int speed, int power,
+       int defense, int range, std::vector<TerrainsType> allow_terrain);
   ~Unit();
 
   void attack(Unit* ennemy);
 
-  Team get_team() { return _team; }
+  Country get_team() { return _country; }
   int get_pv() { return _pv; }
   int get_power() { return _power; }
   void set_pv(int atq) { _pv -= atq; }
@@ -23,7 +34,8 @@ class Unit {
   std::vector<TerrainsType> allow_terrain;
 
  private:
-  Team _team;
+  std::string _name;
+  Country _country;
   int _pv;
   int _speed;  // Portée de déplacement case par case
   int _power;

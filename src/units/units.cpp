@@ -1,19 +1,20 @@
 #include "units.h"
 
-Unit::Unit(int pv, int speed, int power, int defense,
-           std::vector<TerrainsType> allow_terrain)
-    : _pv(pv),
+Unit::Unit(std::string name, Country country, int pv, int speed, int power,
+           int defense, int range, std::vector<TerrainsType> allow_terrain)
+    : _name(name),
+      _pv(pv),
+      _country(country),
       _speed(speed),
       _power(power),
       _defense(defense),
-      _range(1),
-      _team(Default),
+      _range(range),
       allow_terrain(allow_terrain) {}
 
 Unit::~Unit() {}
 
 void Unit::attack(Unit* ennemy) {
-  if (ennemy->get_team() != _team) {
+  if (ennemy->get_team() != _country) {
     ennemy->set_pv(_power);
     this->set_pv(ennemy->get_power() - ennemy->get_def());
 
