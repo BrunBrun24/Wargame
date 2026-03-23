@@ -1,6 +1,6 @@
 #include "units.h"
 
-Unit::Unit(std::string name, Country country, int pv, int speed, int power,
+Unit::Unit(UnitName name, Country country, int pv, int speed, int power,
            int defense, int range, std::vector<TerrainsType> allow_terrain)
     : _name(name),
       _pv(pv),

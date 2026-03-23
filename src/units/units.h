@@ -16,9 +16,46 @@ enum class Country {
   UnitedStates
 };
 
+enum class UnitName {
+  // Terrestre
+  Warrior,
+  Swordsman,
+  Musketman,
+  Infantry,
+  MechanizedInfantry,
+
+  // A distance
+  Archer,
+  Crossbowman,
+  FieldCannon,
+  MachineGun,
+
+  // Cavalerie
+  Horseman,
+  Knight,
+  Cuirassier,
+  Tank,
+  ModernArmor,
+
+  // Naval
+  Galley,
+  Caravel,
+  Ironclad,
+  Destroyer,
+  Submarine,
+  AircraftCarrier,
+
+  // Aérienne
+  Biplane,
+  Fighter,
+  JetFighter,
+  Bomber,
+  JetBomber
+};
+
 class Unit {
  public:
-  Unit(std::string name, Country country, int pv, int speed, int power,
+  Unit(UnitName name, Country country, int pv, int speed, int power,
        int defense, int range, std::vector<TerrainsType> allow_terrain);
   ~Unit();
 
@@ -34,7 +71,7 @@ class Unit {
   std::vector<TerrainsType> allow_terrain;
 
  private:
-  std::string _name;
+  UnitName _name;
   Country _country;
   int _pv;
   int _speed;  // Portée de déplacement case par case

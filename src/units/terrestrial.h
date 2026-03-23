@@ -2,6 +2,6 @@
 
 class Terrestrial : public Unit {
  public:
-  Terrestrial(std::string name, Country country, int pv, int speed, int power,
+  Terrestrial(UnitName name, Country country, int pv, int speed, int power,
               int defense, int range, std::vector<TerrainsType> allow_terrain);
 };
