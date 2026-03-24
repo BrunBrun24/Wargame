@@ -60,17 +60,25 @@ class Unit {
   ~Unit();
 
   void attack(Unit* ennemy);
+  bool find_terrain(const TerrainsType& target_terrain) const;
 
-  Country get_team() { return _country; }
-  int get_pv() { return _pv; }
-  int get_power() { return _power; }
-  void set_pv(int atq) { _pv -= atq; }
-  int get_def() { return _defense; }
+  int get_id() const { return _id; }
+  std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
+  Country get_team() const { return _country; }
+  int get_pv() const { return _pv; }
+  int get_power() const { return _power; }
+  int get_def() const { return _defense; }
+  int get_speed() const { return _speed; }
+
+  void set_pv(const int atq) { _pv -= atq; }
 
  protected:
   std::vector<TerrainsType> allow_terrain;
 
  private:
+  static int _id_counter;
+
+  int _id;
   UnitName _name;
   Country _country;
   int _pv;

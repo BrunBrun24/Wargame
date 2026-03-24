@@ -15,6 +15,8 @@ class Terrains {
   Terrains() = default;
   Terrains(TerrainsType type);
 
+  TerrainsType get_terrain_type() const { return _type; }
+
  private:
   TerrainsType _type;
   // int debuff;
