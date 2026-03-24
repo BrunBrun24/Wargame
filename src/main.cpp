@@ -1,11 +1,8 @@
 #include <iostream>
-#include "map.h"
+#include "terrestrial.h"
 
 int main() {
-    Map map;
-    map.create_map();
-    map.render_debug();
-
+    Terrestrial Ter = Terrestrial(UnitName::Destroyer,Country::France, 2, 2, 2, 2, 2);
     std::cout << "Good Execution !";
     return 0;
 }

@@ -54,6 +54,8 @@ enum class UnitName {
   JetBomber
 };
 
+
+
 class Unit {
  public:
   Unit(UnitName name, Country country, int pv, int speed, int power,
@@ -78,6 +80,7 @@ class Unit {
 
  private:
   static int _id_counter;
+  static std::vector<UnitName> sens_troupes;
 
   int _id;
   UnitName _name;
@@ -87,4 +90,5 @@ class Unit {
   int _power;
   int _defense;
   int _range;  // Portée d'attaque
+  std::vector<int> _avantage;
 };
