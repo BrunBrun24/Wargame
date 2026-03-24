@@ -6,10 +6,6 @@ char Terrains::get_debug_char() const {
   switch (_type) {
     case TerrainsType::CoastLake:
       return 'C';
-    case TerrainsType::Desert:
-      return 'D';
-    case TerrainsType::Grassland:
-      return 'G';
     case TerrainsType::Mountains:
       return 'M';
     case TerrainsType::Ocean:

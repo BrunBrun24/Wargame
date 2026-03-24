@@ -1,14 +1,6 @@
 #pragma once
 
-enum class TerrainsType {
-  CoastLake,
-  Desert,
-  Grassland,
-  Mountains,
-  Ocean,
-  Plains,
-  Snow
-};
+enum class TerrainsType { CoastLake, Mountains, Ocean, Plains, Snow };
 
 class Terrains {
  public:
