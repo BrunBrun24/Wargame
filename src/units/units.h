@@ -4,6 +4,7 @@
 #include "terrains.h"
 
 enum class Country {
+  None,
   France,
   Germany,
   UnitedKingdom,
@@ -64,7 +65,7 @@ class Unit {
 
   int get_id() const { return _id; }
   std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
-  Country get_team() const { return _country; }
+  Country get_country() const { return _country; }
   int get_pv() const { return _pv; }
   int get_power() const { return _power; }
   int get_def() const { return _defense; }

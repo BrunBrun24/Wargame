@@ -50,9 +50,16 @@ bool Case::movement_is_possible_rec(const Case& target_case, const Unit unit,
 
 void Case::movement(Case& target_case, Unit& unit_to_move) {
   if (!movement_is_possible(target_case, unit_to_move)) return;
-
-  delete_unit(target_case, unit_to_move);
-  add_unit(target_case, unit_to_move);
+  // Si la case n'est pas occupée ou que les unités dessus font partie du même
+  // pays
+  Country country_in_target_case = get_unit_country();
+  if ((country_in_target_case == Country::None) ||
+      (country_in_target_case == unit_to_move.get_country())) {
+    delete_unit(target_case, unit_to_move);
+    add_unit(target_case, unit_to_move);
+  } else {
+    // Un ennemie dessus combat !
+  }
 }
 
 void Case::delete_unit(Case& target_case, Unit& unit_to_move) {
@@ -65,4 +72,12 @@ void Case::delete_unit(Case& target_case, Unit& unit_to_move) {
     target_case._units.push_back(*it);
     _units.erase(it);
   }
+}
+
+Country Case::get_unit_country() const {
+  if (_units.empty()) {
+    return Country::None;
+  }
+
+  return _units.front()->get_country();
 }

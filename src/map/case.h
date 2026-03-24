@@ -9,6 +9,8 @@ class Case {
   void add_unit(Case& c, Unit& unit);
   void delete_unit(Case& target_case, Unit& unit_to_move);
 
+  Country get_unit_country() const;
+
   bool movement_is_possible(const Case& target_case, const Unit unit) const;
   bool movement_is_possible_rec(const Case& target_case, const Unit unit,
                                 int speed,

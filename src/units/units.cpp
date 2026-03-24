@@ -20,7 +20,7 @@ Unit::Unit(UnitName name, Country country, int pv, int speed, int power,
 Unit::~Unit() {}
 
 void Unit::attack(Unit* ennemy) {
-  if (ennemy->get_team() != _country) {
+  if (ennemy->get_country() != _country) {
     ennemy->set_pv(_power);
     this->set_pv(ennemy->get_power() - ennemy->get_def());
 
