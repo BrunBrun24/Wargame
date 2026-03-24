@@ -5,11 +5,20 @@
 
 class Case {
  public:
+  Case();
+  Case(TerrainsType type);
+
   void add_neighbor(Case* neighbor);
   void add_unit(Case& c, Unit& unit);
   void delete_unit(Case& target_case, Unit& unit_to_move);
 
+  const std::vector<Case*>& get_neighbors() const { return _neighbors; }
   Country get_unit_country() const;
+  Terrains get_terrain() { return _terrains; };
+
+  void Case::set_terrain_type(TerrainsType type) {
+    _terrains.set_terrain(type);
+  }
 
   bool movement_is_possible(const Case& target_case, const Unit unit) const;
   bool movement_is_possible_rec(const Case& target_case, const Unit unit,
