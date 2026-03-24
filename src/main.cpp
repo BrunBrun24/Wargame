@@ -1,8 +1,17 @@
 #include <iostream>
+
+#include "map.h"
 #include "terrestrial.h"
+#include "units.h"
 
 int main() {
-    Terrestrial Ter = Terrestrial(UnitName::Destroyer,Country::France, 2, 2, 2, 2, 2);
-    std::cout << "Good Execution !";
-    return 0;
+  Map map;
+  map.create_map();
+//   map.render_debug();
+
+  Terrestrial my_warrior(UnitName::Archer, Country::France, 100, 2, 20, 10, 1);
+  my_warrior.get_unit_advantages();
+
+  std::cout << "Good Execution !";
+  return 0;
 }

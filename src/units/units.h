@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <vector>
 
@@ -54,8 +56,6 @@ enum class UnitName {
   JetBomber
 };
 
-
-
 class Unit {
  public:
   Unit(UnitName name, Country country, int pv, int speed, int power,
@@ -72,17 +72,17 @@ class Unit {
   int get_power() const { return _power; }
   int get_def() const { return _defense; }
   int get_speed() const { return _speed; }
-  std::vector<int> get_avantage(){return _avantage;}
-  std::vector<UnitName> get_sens_troupes(){return sens_troupes;}
+  void get_unit_advantages() const;
+  std::string to_string_name(const UnitName name) const;
+
   void set_pv(const int atq) { _pv -= atq; }
-  std::string to_string_name(UnitName nom);
-  void afficher_stats_avantage();
+
  protected:
   std::vector<TerrainsType> allow_terrain;
 
  private:
   static int _id_counter;
-  static std::vector<UnitName> sens_troupes;
+  static std::vector<UnitName> _unit_type_order;
 
   int _id;
   UnitName _name;
@@ -92,5 +92,5 @@ class Unit {
   int _power;
   int _defense;
   int _range;  // Portée d'attaque
-  std::vector<int> _avantage;
+  std::vector<int> _advantage;
 };
