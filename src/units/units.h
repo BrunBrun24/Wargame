@@ -72,9 +72,11 @@ class Unit {
   int get_power() const { return _power; }
   int get_def() const { return _defense; }
   int get_speed() const { return _speed; }
-
+  std::vector<int> get_avantage(){return _avantage;}
+  std::vector<UnitName> get_sens_troupes(){return sens_troupes;}
   void set_pv(const int atq) { _pv -= atq; }
-
+  std::string to_string_name(UnitName nom);
+  void afficher_stats_avantage();
  protected:
   std::vector<TerrainsType> allow_terrain;
 

@@ -1,3 +1,4 @@
+#pragma once
 #include "units.h"
 
 #include <algorithm>
@@ -45,7 +46,7 @@ std::string to_string_UnitName(UnitName name){
 }
 
 std::vector<int> Avantages_troupes(UnitName name){
-    std::ifstream file("./src/files/csv/matrix_unit_avantages.csv");
+    std::ifstream file("../../src/files/csv/matrix_units_avantages.csv");
     if (!file.is_open()) {
       std::cerr << "Impossible d'ouvrir le fichier !\n";
       //si vraiment sa arrive la ya un gros problème lol
@@ -85,7 +86,7 @@ std::vector<int> Avantages_troupes(UnitName name){
 
 int Unit::_id_counter = 0;
 //sens_troupes : 
-std::vector<UnitName> sens_troupes = {UnitName::Warrior, UnitName::Swordsman, UnitName::Musketman, UnitName::Infantry, UnitName::MechanizedInfantry, UnitName::Archer, UnitName::Crossbowman, UnitName::FieldCannon, UnitName::MachineGun, UnitName::Horseman, UnitName::Knight, UnitName::Cuirassier, UnitName::Tank, UnitName::ModernArmor, UnitName::Galley, UnitName::Caravel, UnitName::Ironclad, UnitName::Destroyer, UnitName::Submarine, UnitName::AircraftCarrier, UnitName::Biplane, UnitName::Fighter, UnitName::JetFighter, UnitName::Bomber, UnitName::JetBomber};
+std::vector<UnitName> Unit::sens_troupes = {UnitName::Warrior, UnitName::Swordsman, UnitName::Musketman, UnitName::Infantry, UnitName::MechanizedInfantry, UnitName::Archer, UnitName::Crossbowman, UnitName::FieldCannon, UnitName::MachineGun, UnitName::Horseman, UnitName::Knight, UnitName::Cuirassier, UnitName::Tank, UnitName::ModernArmor, UnitName::Galley, UnitName::Caravel, UnitName::Ironclad, UnitName::Destroyer, UnitName::Submarine, UnitName::AircraftCarrier, UnitName::Biplane, UnitName::Fighter, UnitName::JetFighter, UnitName::Bomber, UnitName::JetBomber};
 Unit::Unit(UnitName name, Country country, int pv, int speed, int power,
            int defense, int range, std::vector<TerrainsType> allow_terrain)
     : _name(name),
@@ -122,4 +123,16 @@ bool Unit::find_terrain(const TerrainsType& target_terrain) const {
       std::find(allow_terrain.begin(), allow_terrain.end(), target_terrain);
 
   return it != allow_terrain.end();
+}
+
+
+std::string Unit::to_string_name(UnitName nom){return to_string_UnitName(nom);}
+
+
+void Unit::afficher_stats_avantage(){
+  std::vector<int> test = get_avantage();
+    std::vector<UnitName> test2 = get_sens_troupes();
+    for (size_t i = 0; i < test.size(); ++i) {
+        std::cout << to_string_name(test2[i]) << " : " << test[i] << "\n";
+    }
 }
