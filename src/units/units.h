@@ -75,7 +75,8 @@ class Unit {
   Unit(UnitName name, Country country, std::vector<TerrainsType> allow_terrain);
   ~Unit();
 
-  void take_damage(Unit* ennemy);
+  int calculate_damage(Unit& ennemy) const;
+  void attack(Unit& ennemy);
   bool find_terrain(const TerrainsType& target_terrain) const;
 
   int get_id() const { return _id; }

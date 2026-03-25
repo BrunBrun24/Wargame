@@ -58,38 +58,12 @@ Unit::Unit(UnitName name, Country country,
 
 Unit::~Unit() {}
 
-void Unit::take_damage(Unit* ennemy) {
-  // Si l'ennemie est affaiblie, elle fait moins de dégâts
-  double percentage_hp_remaining = static_cast<double>(ennemy->_stats.hp) /
-                                   unitData.at(ennemy->get_name()).hp;
-  if (percentage_hp_remaining < 0.3) {
-    percentage_hp_remaining = 0.3;
-  }
-
-  // Calcul des dégâts subis
-  double advantage =
-      unit_strength_weakness_matrix.at(ennemy->get_name()).at(this->get_name());
-  double raw_damage =
-      ennemy->_stats.power * percentage_hp_remaining * (1.0 + advantage);
-  _stats.hp -= static_cast<int>(raw_damage);
-  if (_stats.hp < 0) {
-    _stats.hp = 0;
-  }
-
-  // Si l'unité est affaiblie, elle fait moins de dégâts
-  percentage_hp_remaining =
-      static_cast<double>(_stats.hp) / unitData.at(this->get_name()).hp;
-  if (percentage_hp_remaining < 0.3) {
-    percentage_hp_remaining = 0.3;
-  }
-
-  // Calcul des dégâts subis
-  advantage =
-      unit_strength_weakness_matrix.at(this->get_name()).at(ennemy->get_name());
-  raw_damage = _stats.power * percentage_hp_remaining;
-  ennemy->_stats.hp -= static_cast<int>(raw_damage) * (1.0 + advantage);
-  if (ennemy->_stats.hp < 0) {
-    ennemy->_stats.hp = 0;
+void Unit::attack(Unit& ennemy) {
+  // On attaque l'ennemie
+  ennemy._stats.hp -= calculate_damage(*this);
+  // Si l'ennemie est toujours en vie il riposte
+  if (ennemy._stats.hp > 0) {
+    _stats.hp -= calculate_damage(ennemy);
   }
 }
 
@@ -98,4 +72,21 @@ bool Unit::find_terrain(const TerrainsType& target_terrain) const {
       std::find(allow_terrain.begin(), allow_terrain.end(), target_terrain);
 
   return it != allow_terrain.end();
+}
+
+int Unit::calculate_damage(Unit& ennemy) const {
+  // Si l'unité est affaiblie, elle fait moins de dégâts
+  double percentage_hp_remaining =
+      static_cast<double>(_stats.hp) / unitData.at(this->get_name()).hp;
+  if (percentage_hp_remaining < 0.3) {
+    percentage_hp_remaining = 0.3;
+  }
+
+  // Calcul des dégâts
+  double strength_weakness =
+      unit_strength_weakness_matrix.at(this->get_name()).at(ennemy.get_name());
+  double raw_damage =
+      _stats.power * percentage_hp_remaining * (1.0 + strength_weakness);
+
+  return static_cast<int>(raw_damage);
 }

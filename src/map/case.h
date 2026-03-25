@@ -5,14 +5,21 @@
 #include "terrains.h"
 #include "units.h"
 
+class Case;
+
+struct Course {
+  bool is_possible;
+  std::vector<Case*> distance_traveled;
+};
+
 class Case {
  public:
   Case();
   Case(TerrainsType type);
 
   void add_neighbor(Case* neighbor);
-  void add_unit(Case& c, Unit& unit);
-  void delete_unit(Case& target_case, Unit& unit_to_move);
+  void add_unit(Unit& unit) { _units.push_back(&unit); };
+  void delete_unit(Unit& unit_to_move);
 
   const std::vector<Case*>& get_neighbors() const { return _neighbors; }
   Country get_unit_country() const;
@@ -22,11 +29,13 @@ class Case {
     _terrains.set_terrain(type);
   }
 
-  bool movement_is_possible(const Case& target_case, const Unit unit) const;
-  bool movement_is_possible_rec(const Case& target_case, const Unit unit,
-                                int speed,
-                                std::vector<const Case*>& visited) const;
+  Course movement_is_possible(const Case& target_case, const Unit& unit) const;
+  Course movement_is_possible_rec(const Case& target_case, const Unit& unit,
+                                  int speed,
+                                  std::vector<const Case*>& visited) const;
   void movement(Case& target_case, Unit& unit_to_move);
+
+  Unit& select_best_unit(Unit& ennemy) const;
 
  private:
   std::vector<Case*> _neighbors;  // Cases adjacentes
