@@ -8,7 +8,7 @@ Case::Case() : _terrains(TerrainsType::Plains) {}
 Case::Case(TerrainsType type) : _terrains(type) {}
 
 void Map::create_map() {
-  std::srand(std::time(nullptr)); // Initialisation du hasard
+  std::srand(static_cast<unsigned int>(std::time(nullptr)));
   _cases.resize(SIZE_H, std::vector<Case>(SIZE_W));
 
   _generate_ocean();
