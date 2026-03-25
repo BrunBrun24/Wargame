@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <vector>
 
 #include "terrains.h"
@@ -56,41 +57,42 @@ enum class UnitName {
   JetBomber
 };
 
+struct Stats {
+  int hp;
+  int power;
+  int defense;
+  int speed;
+  int range;
+};
+
+extern const std::map<UnitName, Stats> unitData;
+
+using StrengthWeaknessMatrix = std::map<UnitName, std::map<UnitName, double>>;
+extern const StrengthWeaknessMatrix unit_strength_weakness_matrix;
+
 class Unit {
  public:
-  Unit(UnitName name, Country country, int pv, int speed, int power,
-       int defense, int range, std::vector<TerrainsType> allow_terrain);
+  Unit(UnitName name, Country country, std::vector<TerrainsType> allow_terrain);
   ~Unit();
 
-  void attack(Unit* ennemy);
+  void take_damage(Unit* ennemy);
   bool find_terrain(const TerrainsType& target_terrain) const;
 
   int get_id() const { return _id; }
   std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
+  Stats get_stats() const { return _stats; }
+  UnitName get_name() const { return _name; }
   Country get_country() const { return _country; }
-  int get_pv() const { return _pv; }
-  int get_power() const { return _power; }
-  int get_def() const { return _defense; }
-  int get_speed() const { return _speed; }
-  void get_unit_advantages() const;
-  std::string to_string_name(const UnitName name) const;
-
-  void set_pv(const int atq) { _pv -= atq; }
+  int get_speed() const { return _stats.speed; }
 
  protected:
   std::vector<TerrainsType> allow_terrain;
 
  private:
   static int _id_counter;
-  static std::vector<UnitName> _unit_type_order;
 
   int _id;
   UnitName _name;
   Country _country;
-  int _pv;
-  int _speed;  // Portée de déplacement case par case
-  int _power;
-  int _defense;
-  int _range;  // Portée d'attaque
-  std::vector<int> _advantage;
+  Stats _stats;
 };

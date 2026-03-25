@@ -2,183 +2,100 @@
 #include "units.h"
 
 #include <algorithm>
-#include <fstream>
-#include <iostream>
 #include <string>
 
-/*
-pour faiblesse :
-On parcours le fichier csv ligne par ligne, prendre le premier element, il doit
-être == au name. ensuite on prend la ligne, et on ajoute dans Avantage avec
-Avantage.push_back(element de la colonne)
-*/
+#include "unit_utils.h"
 
-std::string to_string_UnitName(UnitName name) {
-  switch (name) {
-    case UnitName::Warrior:
-      return "Warrior";
-    case UnitName::Swordsman:
-      return "Swordsman";
-    case UnitName::Musketman:
-      return "Musketman";
-    case UnitName::Infantry:
-      return "Infantry";
-    case UnitName::MechanizedInfantry:
-      return "MechanizedInfantry";
-    case UnitName::Archer:
-      return "Archer";
-    case UnitName::Crossbowman:
-      return "Crossbowman";
-    case UnitName::FieldCannon:
-      return "FieldCannon";
-    case UnitName::MachineGun:
-      return "MachineGun";
-    case UnitName::Horseman:
-      return "Horseman";
-    case UnitName::Knight:
-      return "Knight";
-    case UnitName::Cuirassier:
-      return "Cuirassier";
-    case UnitName::Tank:
-      return "Tank";
-    case UnitName::ModernArmor:
-      return "ModernArmor";
-    case UnitName::Galley:
-      return "Galley";
-    case UnitName::Caravel:
-      return "Caravel";
-    case UnitName::Ironclad:
-      return "Ironclad";
-    case UnitName::Destroyer:
-      return "Destroyer";
-    case UnitName::Submarine:
-      return "Submarine";
-    case UnitName::AircraftCarrier:
-      return "AircraftCarrier";
-    case UnitName::Biplane:
-      return "Biplane";
-    case UnitName::Fighter:
-      return "Fighter";
-    case UnitName::JetFighter:
-      return "JetFighter";
-    case UnitName::Bomber:
-      return "Bomber";
-    case UnitName::JetBomber:
-      return "JetBomber";
-    default:
-      return "Unknown";
-  }
-}
+const std::map<UnitName, Stats> unitData = {
+    // Terrestre
+    {UnitName::Warrior, {100, 20, 20, 2, 1}},
+    {UnitName::Swordsman, {120, 35, 35, 2, 1}},
+    {UnitName::Musketman, {150, 55, 50, 2, 1}},
+    {UnitName::Infantry, {180, 75, 70, 3, 1}},
+    {UnitName::MechanizedInfantry, {220, 85, 85, 4, 1}},
 
-std::vector<int> display_advantage_stats(UnitName name) {
-  std::ifstream file("../../src/files/csv/matrix_units_avantages.csv");
-  if (!file.is_open()) {
-    std::cerr << "Impossible d'ouvrir le fichier !\n";
-  } else {
-    std::string line;
-    // Lire l'en-tête
-    std::getline(file, line);
-    while (std::getline(file, line)) {
-      // Trouver la première virgule pour taille du mot,
-      size_t pos = line.find(',');
-      std::string first_cell = line.substr(0, pos);
+    // A distance
+    {UnitName::Archer, {80, 15, 10, 2, 2}},
+    {UnitName::Crossbowman, {100, 30, 20, 2, 2}},
+    {UnitName::FieldCannon, {130, 50, 40, 2, 2}},
+    {UnitName::MachineGun, {160, 70, 65, 2, 1}},
 
-      if (first_cell == to_string_UnitName(name)) {
-        std::vector<int> values;
-        size_t start = pos + 1;
-        size_t end;
+    // Cavalerie
+    {UnitName::Horseman, {110, 36, 30, 4, 1}},
+    {UnitName::Knight, {140, 48, 45, 4, 1}},
+    {UnitName::Cuirassier, {170, 65, 60, 4, 1}},
+    {UnitName::Tank, {250, 80, 70, 4, 1}},
+    {UnitName::ModernArmor, {300, 90, 85, 5, 1}},
 
-        // Découper toutes les cellules restantes
-        while ((end = line.find(',', start)) != std::string::npos) {
-          values.push_back(std::stoi(line.substr(start, end - start)));
-          start = end + 1;
-        }
+    // Naval
+    {UnitName::Galley, {120, 30, 30, 3, 1}},
+    {UnitName::Caravel, {160, 50, 50, 4, 1}},
+    {UnitName::Ironclad, {220, 70, 65, 4, 1}},
+    {UnitName::Destroyer, {280, 85, 80, 5, 1}},
+    {UnitName::Submarine, {150, 75, 60, 4, 3}},
+    {UnitName::AircraftCarrier, {350, 65, 80, 3, 1}},
 
-        // Dernière cellule
-        if (start < line.size()) {
-          values.push_back(std::stoi(line.substr(start)));
-        }
+    // Aérienne
+    {UnitName::Biplane, {100, 60, 55, 6, 3}},
+    {UnitName::Fighter, {140, 80, 75, 8, 4}},
+    {UnitName::JetFighter, {180, 95, 90, 10, 5}},
+    {UnitName::Bomber, {150, 85, 70, 7, 6}},
+    {UnitName::JetBomber, {200, 110, 85, 9, 8}}};
 
-        return values;
-      }
-    }
-  }
-  return {};
-}
+const StrengthWeaknessMatrix unit_strength_weakness_matrix =
+    UnitParser::load_strength_weakness_matrix();
 
 int Unit::_id_counter = 0;
 
-std::vector<UnitName> Unit::_unit_type_order = {UnitName::Warrior,
-                                                UnitName::Swordsman,
-                                                UnitName::Musketman,
-                                                UnitName::Infantry,
-                                                UnitName::MechanizedInfantry,
-                                                UnitName::Archer,
-                                                UnitName::Crossbowman,
-                                                UnitName::FieldCannon,
-                                                UnitName::MachineGun,
-                                                UnitName::Horseman,
-                                                UnitName::Knight,
-                                                UnitName::Cuirassier,
-                                                UnitName::Tank,
-                                                UnitName::ModernArmor,
-                                                UnitName::Galley,
-                                                UnitName::Caravel,
-                                                UnitName::Ironclad,
-                                                UnitName::Destroyer,
-                                                UnitName::Submarine,
-                                                UnitName::AircraftCarrier,
-                                                UnitName::Biplane,
-                                                UnitName::Fighter,
-                                                UnitName::JetFighter,
-                                                UnitName::Bomber,
-                                                UnitName::JetBomber};
-
-Unit::Unit(UnitName name, Country country, int pv, int speed, int power,
-           int defense, int range, std::vector<TerrainsType> allow_terrain)
+Unit::Unit(UnitName name, Country country,
+           std::vector<TerrainsType> allow_terrain)
     : _name(name),
-      _pv(pv),
       _country(country),
-      _speed(speed),
-      _power(power),
-      _defense(defense),
-      _range(range),
-      allow_terrain(allow_terrain),
-      _advantage(display_advantage_stats(name)) {
+      _stats(unitData.at(name)),
+      allow_terrain(allow_terrain) {
   this->_id = _id_counter++;
 }
 
 Unit::~Unit() {}
 
-void Unit::attack(Unit* ennemy) {
-  if (ennemy->get_country() != _country) {
-    ennemy->set_pv(_power);
-    this->set_pv(ennemy->get_power() - ennemy->get_def());
-
-    if (ennemy->get_pv() <= 0) {
-      delete ennemy;
-    }
-
-    if (_pv <= 0) {
-      delete this;
-    }
+void Unit::take_damage(Unit* ennemy) {
+  // Si l'ennemie est affaiblie, elle fait moins de dégâts
+  double percentage_hp_remaining = static_cast<double>(ennemy->_stats.hp) /
+                                   unitData.at(ennemy->get_name()).hp;
+  if (percentage_hp_remaining < 0.3) {
+    percentage_hp_remaining = 0.3;
   }
-};
+
+  // Calcul des dégâts subis
+  double advantage =
+      unit_strength_weakness_matrix.at(ennemy->get_name()).at(this->get_name());
+  double raw_damage =
+      ennemy->_stats.power * percentage_hp_remaining * (1.0 + advantage);
+  _stats.hp -= static_cast<int>(raw_damage);
+  if (_stats.hp < 0) {
+    _stats.hp = 0;
+  }
+
+  // Si l'unité est affaiblie, elle fait moins de dégâts
+  percentage_hp_remaining =
+      static_cast<double>(_stats.hp) / unitData.at(this->get_name()).hp;
+  if (percentage_hp_remaining < 0.3) {
+    percentage_hp_remaining = 0.3;
+  }
+
+  // Calcul des dégâts subis
+  advantage =
+      unit_strength_weakness_matrix.at(this->get_name()).at(ennemy->get_name());
+  raw_damage = _stats.power * percentage_hp_remaining;
+  ennemy->_stats.hp -= static_cast<int>(raw_damage) * (1.0 + advantage);
+  if (ennemy->_stats.hp < 0) {
+    ennemy->_stats.hp = 0;
+  }
+}
 
 bool Unit::find_terrain(const TerrainsType& target_terrain) const {
   auto it =
       std::find(allow_terrain.begin(), allow_terrain.end(), target_terrain);
 
   return it != allow_terrain.end();
-}
-
-std::string Unit::to_string_name(const UnitName name) const {
-  return to_string_UnitName(name);
-}
-
-void Unit::get_unit_advantages() const {
-  for (size_t i = 0; i < _advantage.size(); ++i) {
-    std::cout << to_string_name(_unit_type_order[i]) << " : " << _advantage[i]
-              << "\n";
-  }
 }
