@@ -2,7 +2,7 @@
 
 #include "player_utils.h"
 
-Game::Game(int nb_player) : _nb_player(nb_player) {
+Game::Game(int nb_player) : _nb_player(nb_player), _map(nb_player) {
   std::vector<Country> taken_countries;
 
   // On créer le nombre de joueur demandé
@@ -17,4 +17,11 @@ Game::Game(int nb_player) : _nb_player(nb_player) {
 
     _players.push_back(std::make_unique<Player>(c));
   }
+  std::cout << std::endl;
+}
+
+void Game::start_game() {
+  // On créer la map
+  _map.create_map(_players);
+  _map.render_debug();
 }
