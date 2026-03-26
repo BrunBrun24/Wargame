@@ -1,5 +1,9 @@
 #include "case.h"
 
+Case::Case() : _terrains(TerrainsType::Plains) {}
+
+Case::Case(TerrainsType type) : _terrains(type) {}
+
 void Case::add_neighbor(Case* neighbor) {
   if (neighbor != nullptr) {
     _neighbors.push_back(neighbor);
