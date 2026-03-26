@@ -36,8 +36,12 @@ class Case {
   void movement(Case& target_case, Unit& unit_to_move);
 
   Unit& select_best_unit(Unit& ennemy) const;
+  Course distance_between(const Case& target) const;
 
  private:
+  Course _distance_between_rec(const Case& target,
+                               std::vector<const Case*>& visited) const;
+
   std::vector<Case*> _neighbors;  // Cases adjacentes
   std::vector<Unit*> _units;      // Unité sur la case
   Terrains _terrains;

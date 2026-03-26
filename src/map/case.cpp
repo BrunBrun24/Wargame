@@ -20,14 +20,11 @@ void Case::add_neighbor(Case* neighbor) {
  */
 Course Case::movement_is_possible(const Case& target_case,
                                   const Unit& unit) const {
-  // Cas particulier : on est déjà sur la case
   if (this == &target_case) {
     return {true, {const_cast<Case*>(this)}};
   }
 
   std::vector<const Case*> visited;
-  // On lance la récursion. On récupère la structure complète, pas juste un
-  // booléen.
   return movement_is_possible_rec(target_case, unit, unit.get_speed(), visited);
 }
 
@@ -170,4 +167,39 @@ Unit& Case::select_best_unit(Unit& ennemy) const {
   }
 
   return *best_unit;
+}
+
+Course Case::distance_between(const Case& target_case) const {
+  if (this == &target_case) {
+    return {true, {const_cast<Case*>(this)}};
+  }
+
+  std::vector<const Case*> visited;
+  return _distance_between_rec(target_case, visited);
+}
+
+Course Case::_distance_between_rec(const Case& target_case,
+                                   std::vector<const Case*>& visited) const {
+  if (this == &target_case) {
+    return {true, {const_cast<Case*>(this)}};
+  }
+
+  visited.push_back(this);
+
+  for (const Case* neighbor : _neighbors) {
+    // Éviter de repasser sur une case déjà vue
+    if (std::find(visited.begin(), visited.end(), neighbor) != visited.end()) {
+      continue;
+    }
+
+    // Appel récursif
+    Course result = neighbor->_distance_between_rec(target_case, visited);
+
+    // Si un chemin a été trouvé par ce voisin
+    if (result.is_possible) {
+      result.distance_traveled.insert(result.distance_traveled.begin(),
+                                      const_cast<Case*>(this));
+      return result;
+    }
+  }
 }
