@@ -1,7 +1,7 @@
 #pragma once
 
 enum class Country {
-  None,
+  Neutral,
   France,
   Germany,
   UnitedKingdom,

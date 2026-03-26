@@ -87,7 +87,7 @@ void Case::movement(Case& target_case, Unit& unit_to_move) {
   // Si la case n'est pas occupée ou que les unités dessus font partie du même
   // pays
   Country country_in_target_case = get_unit_country();
-  if ((country_in_target_case == Country::None) ||
+  if ((country_in_target_case == Country::Neutral) ||
       (country_in_target_case == unit_to_move.get_country())) {
     delete_unit(unit_to_move);
     target_case.add_unit(unit_to_move);
@@ -114,7 +114,7 @@ void Case::movement(Case& target_case, Unit& unit_to_move) {
       if (unit_to_move.get_stats().hp > 0) {
         // On vérifie s'il y a toujours des unités sur la case cible
         Country country_in_target_case = get_unit_country();
-        if (country_in_target_case == Country::None) {
+        if (country_in_target_case == Country::Neutral) {
           // S'il y en a plus, on déplace l'unité dessus
           delete_unit(unit_to_move);
           target_case.add_unit(unit_to_move);
@@ -144,7 +144,7 @@ void Case::delete_unit(Unit& unit_to_move) {
 
 Country Case::get_unit_country() const {
   if (_units.empty()) {
-    return Country::None;
+    return Country::Neutral;
   }
 
   return _units.front()->get_country();
