@@ -8,6 +8,10 @@
 #include "terrains.h"
 
 enum class UnitName {
+  // Neutre
+  Settler,
+  Worker,
+
   // Terrestre
   Warrior,
   Swordsman,
@@ -60,32 +64,31 @@ class Unit {
  public:
   Unit(UnitName name, Country country, std::vector<TerrainsType> allow_terrain);
 
-  int calculate_damage(const Unit& ennemy) const;
-  void attack(Unit& ennemy);
+  int calculate_damage(const Unit* ennemy) const;
+  void attack(Unit* ennemy);
   bool find_terrain(const TerrainsType& target_terrain) const;
-  void switch_travel_possible() { _travel_possible = !_travel_possible; }
-  void switch_on_guard() { _on_guard = !_on_guard; }
+  void switch_active() { active = !active; }
+  void switch_on_guard() { on_guard = !on_guard; }
   void heal();
 
-  int get_id() const { return _id; }
+  int get_id() const { return id; }
   std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
-  Stats get_stats() const { return _stats; }
-  UnitName get_name() const { return _name; }
-  Country get_country() const { return _country; }
-  int get_speed() const { return _stats.speed; }
-  bool get_travel_possible() const { return _travel_possible; }
-  bool get_on_guard() const { return _on_guard; }
+  Stats get_stats() const { return stats; }
+  UnitName get_name() const { return name; }
+  Country get_country() const { return country; }
+  int get_speed() const { return stats.speed; }
+  bool is_active() const { return active; }
+  bool is_on_guard() const { return on_guard; }
 
  protected:
+  int id;
+  UnitName name;
+  Country country;
+  Stats stats;
+  bool active;    // par default à true quand l'unité apparaît
+  bool on_guard;  // par default à false quand l'unité apparaît
   std::vector<TerrainsType> allow_terrain;
 
  private:
   static int _id_counter;
-
-  int _id;
-  UnitName _name;
-  Country _country;
-  Stats _stats;
-  bool _travel_possible;  // par default à true quand l'unité apparaît
-  bool _on_guard;         // par default à false quand l'unité apparaît
 };

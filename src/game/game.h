@@ -8,9 +8,10 @@ class Game {
   Game(int nb_player);
 
   void start_game();
+  void turn_by_turn();
+  void play(Player& player);
 
  private:
   int _nb_player;
-  std::vector<std::unique_ptr<Player>> _players;
   Map _map;
 };

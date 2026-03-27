@@ -1,12 +1,25 @@
 #include "case.h"
 
-Case::Case() : _terrains(TerrainsType::Plains) {}
+Case::Case(TerrainsType type) : _terrains(type), _country(Country::Neutral) {}
 
-Case::Case(TerrainsType type) : _terrains(type) {}
+Case::Case(TerrainsType type, Country country)
+    : _terrains(type), _country(country) {}
 
 void Case::add_neighbor(Case* neighbor) {
   if (neighbor != nullptr) {
     _neighbors.push_back(neighbor);
+  }
+}
+
+void Case::add_unit(Unit* unit) {
+  _units.push_back(unit);
+
+  set_country(unit->get_country());
+};
+
+void Case::set_country_neutral() {
+  if (_units.size() == 0) {
+    _country = Country::Neutral;
   }
 }
 
@@ -18,14 +31,15 @@ void Case::add_neighbor(Case* neighbor) {
  * @return course Structure contenant la validité du trajet et la liste des
  * cases traversées.
  */
-Course Case::movement_is_possible(const Case& target_case,
-                                  const Unit& unit) const {
-  if (this == &target_case) {
+Course Case::movement_is_possible(const Case* target_case,
+                                  const Unit* unit) const {
+  if (this == target_case) {
     return {true, {const_cast<Case*>(this)}};
   }
 
   std::vector<const Case*> visited;
-  return movement_is_possible_rec(target_case, unit, unit.get_speed(), visited);
+  return movement_is_possible_rec(target_case, unit, unit->get_speed(),
+                                  visited);
 }
 
 /**
@@ -39,14 +53,14 @@ Course Case::movement_is_possible(const Case& target_case,
  * @return course Structure contenant la validité du chemin et la liste des
  * cases traversées.
  */
-Course Case::movement_is_possible_rec(const Case& target_case, const Unit& unit,
+Course Case::movement_is_possible_rec(const Case* target_case, const Unit* unit,
                                       int speed,
                                       std::vector<const Case*>& visited) const {
   if (speed < 0) {
     return {false, {}};
   }
 
-  if (this == &target_case) {
+  if (this == target_case) {
     return {true, {const_cast<Case*>(this)}};
   }
 
@@ -54,7 +68,7 @@ Course Case::movement_is_possible_rec(const Case& target_case, const Unit& unit,
 
   for (const Case* neighbor : _neighbors) {
     // Vérification terrain
-    if (!unit.find_terrain(neighbor->_terrains.get_terrain_type())) {
+    if (!unit->find_terrain(neighbor->_terrains.get_terrain_type())) {
       continue;
     }
 
@@ -78,60 +92,64 @@ Course Case::movement_is_possible_rec(const Case& target_case, const Unit& unit,
   return {false, {}};
 }
 
-void Case::movement(Case& target_case, Unit& unit_to_move) {
+void Case::movement(Case* target_case, Unit* unit_to_move) {
   Course course = movement_is_possible(target_case, unit_to_move);
   if (!course.is_possible) return;
   // Si la case n'est pas occupée ou que les unités dessus font partie du même
   // pays
-  Country country_in_target_case = get_unit_country();
-  if ((country_in_target_case == Country::Neutral) ||
-      (country_in_target_case == unit_to_move.get_country())) {
+  if ((target_case->get_country() == Country::Neutral) ||
+      (target_case->get_country() == unit_to_move->get_country())) {
     delete_unit(unit_to_move);
-    target_case.add_unit(unit_to_move);
+    set_country_neutral();
+    target_case->add_unit(unit_to_move);
   } else {
     // Un ennemi est présent sur la case cible, on lance le combat
     // On demande à la case cible de choisir son meilleur défenseur contre notre
     // unité
-    Unit& best_defender = target_case.select_best_unit(unit_to_move);
-    unit_to_move.attack(best_defender);
+    Unit* best_defender = target_case->select_best_unit(unit_to_move);
+    unit_to_move->attack(best_defender);
 
     // On vérifie si le défenseur est toujours en vie
-    if (best_defender.get_stats().hp > 0) {
+    if (best_defender->get_stats().hp > 0) {
       // On vérifie si l'unité qui se déplace est toujours en vie
-      if (unit_to_move.get_stats().hp > 0) {
+      if (unit_to_move->get_stats().hp > 0) {
         // On le met une case -1 de son parcours
         delete_unit(unit_to_move);
+        set_country_neutral();
         course.distance_traveled[course.distance_traveled.size() - 1]->add_unit(
             unit_to_move);
       }
     } else {
-      target_case.delete_unit(best_defender);
+      target_case->delete_unit(best_defender);
+      target_case->set_country_neutral();
 
       // On vérifie si l'unité qui se déplace est toujours en vie
-      if (unit_to_move.get_stats().hp > 0) {
+      if (unit_to_move->get_stats().hp > 0) {
         // On vérifie s'il y a toujours des unités sur la case cible
-        Country country_in_target_case = get_unit_country();
-        if (country_in_target_case == Country::Neutral) {
+        if (target_case->get_country() == Country::Neutral) {
           // S'il y en a plus, on déplace l'unité dessus
           delete_unit(unit_to_move);
-          target_case.add_unit(unit_to_move);
+          set_country_neutral();
+          target_case->add_unit(unit_to_move);
         } else {
           // Sinon on le met une case -1 de son parcours
           delete_unit(unit_to_move);
+          set_country_neutral();
           course.distance_traveled[course.distance_traveled.size() - 1]
               ->add_unit(unit_to_move);
         }
       } else {
         delete_unit(unit_to_move);
+        set_country_neutral();
       }
     }
   }
 }
 
-void Case::delete_unit(Unit& unit_to_move) {
+void Case::delete_unit(Unit* unit_to_move) {
   // On cherche l'unité par son ID
   auto it = std::find_if(_units.begin(), _units.end(), [&](Unit* u) {
-    return u->get_id() == unit_to_move.get_id();
+    return u->get_id() == unit_to_move->get_id();
   });
 
   if (it != _units.end()) {
@@ -154,7 +172,7 @@ Country Case::get_unit_country() const {
  * contre.
  * @return Unit L'objet unité ayant le score d'efficacité le plus élevé.
  */
-Unit& Case::select_best_unit(Unit& ennemy) const {
+Unit* Case::select_best_unit(Unit* ennemy) const {
   Unit* best_unit = nullptr;
   int damage = 0;
 
@@ -166,7 +184,7 @@ Unit& Case::select_best_unit(Unit& ennemy) const {
     }
   }
 
-  return *best_unit;
+  return best_unit;
 }
 
 Course Case::distance_between(const Case& target_case) const {
@@ -202,4 +220,7 @@ Course Case::_distance_between_rec(const Case& target_case,
       return result;
     }
   }
+
+  // Case non trouvé
+  return {false, {}};
 }

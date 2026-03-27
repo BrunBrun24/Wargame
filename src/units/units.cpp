@@ -7,6 +7,10 @@
 #include "unit_utils.h"
 
 const std::map<UnitName, Stats> unitData = {
+    // Neutre
+    {UnitName::Settler, {1, 0, 1, 0}},
+    {UnitName::Worker, {1, 0, 1, 0}},
+
     // Terrestre
     {UnitName::Warrior, {100, 20, 2, 1}},
     {UnitName::Swordsman, {120, 35, 2, 1}},
@@ -49,21 +53,21 @@ int Unit::_id_counter = 0;
 
 Unit::Unit(UnitName name, Country country,
            std::vector<TerrainsType> allow_terrain)
-    : _name(name),
-      _country(country),
-      _stats(unitData.at(name)),
+    : name(name),
+      country(country),
+      stats(unitData.at(name)),
       allow_terrain(allow_terrain),
-      _travel_possible(true),
-      _on_guard(false) {
-  this->_id = _id_counter++;
+      active(true),
+      on_guard(false) {
+  this->id = _id_counter++;
 }
 
-void Unit::attack(Unit& ennemy) {
+void Unit::attack(Unit* ennemy) {
   // On attaque l'ennemie
-  ennemy._stats.hp -= calculate_damage(*this);
+  ennemy->stats.hp -= calculate_damage(this);
   // Si l'ennemie est toujours en vie il riposte
-  if (ennemy._stats.hp > 0) {
-    _stats.hp -= calculate_damage(ennemy);
+  if (ennemy->stats.hp > 0) {
+    stats.hp -= calculate_damage(ennemy);
   }
 }
 
@@ -74,22 +78,22 @@ bool Unit::find_terrain(const TerrainsType& target_terrain) const {
   return it != allow_terrain.end();
 }
 
-int Unit::calculate_damage(const Unit& ennemy) const {
+int Unit::calculate_damage(const Unit* ennemy) const {
   // Si l'unité est affaiblie, elle fait moins de dégâts
   double percentage_hp_remaining =
-      static_cast<double>(_stats.hp) / unitData.at(this->get_name()).hp;
+      static_cast<double>(stats.hp) / unitData.at(this->get_name()).hp;
   if (percentage_hp_remaining < 0.3) {
     percentage_hp_remaining = 0.3;
   }
 
   // Calcul des dégâts
   double strength_weakness =
-      unit_strength_weakness_matrix.at(this->get_name()).at(ennemy.get_name());
+      unit_strength_weakness_matrix.at(this->get_name()).at(ennemy->get_name());
   double raw_damage =
-      _stats.power * percentage_hp_remaining * (1.0 + strength_weakness);
+      stats.power * percentage_hp_remaining * (1.0 + strength_weakness);
 
   // Si l'unité est en garde alors la puissance de l'attaque prend -30%
-  if (ennemy.get_on_guard()) {
+  if (ennemy->is_on_guard()) {
     raw_damage *= 0.7;
   }
 
@@ -97,11 +101,11 @@ int Unit::calculate_damage(const Unit& ennemy) const {
 }
 
 void Unit::heal() {
-  int max_hp = unitData.at(_name).hp;
+  int max_hp = unitData.at(name).hp;
 
-  if (_stats.hp < max_hp) {
+  if (stats.hp < max_hp) {
     int amount_to_heal = static_cast<int>(max_hp * 0.2);
 
-    _stats.hp = std::min<int>(_stats.hp + amount_to_heal, max_hp);
+    stats.hp = std::min<int>(stats.hp + amount_to_heal, max_hp);
   }
 }

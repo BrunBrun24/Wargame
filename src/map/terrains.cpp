@@ -1,6 +1,10 @@
 #include "terrains.h"
 
-Terrains::Terrains(TerrainsType type) : _type(type) {}
+Terrains::Terrains(TerrainsType type)
+    : _type(type), _building(BuildingType::NoBuilding) {}
+
+Terrains::Terrains(TerrainsType type, BuildingType building)
+    : _type(type), _building(building) {}
 
 char Terrains::get_debug_char() const {
   switch (_type) {

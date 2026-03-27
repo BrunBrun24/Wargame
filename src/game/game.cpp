@@ -1,27 +1,27 @@
 #include "game.h"
 
-#include "player_utils.h"
-
-Game::Game(int nb_player) : _nb_player(nb_player), _map(nb_player) {
-  std::vector<Country> taken_countries;
-
-  // On créer le nombre de joueur demandé
-  for (int i = 0; i < nb_player; i++) {
-    std::cout << "\nJoueur " << i + 1;
-
-    // On passe la liste des pays déjà pris
-    Country c = PlayerParser::choice_country(taken_countries);
-
-    // On ajoute le nouveau pays à la liste d'exclusion pour le prochain tour
-    taken_countries.push_back(c);
-
-    _players.push_back(std::make_unique<Player>(c));
-  }
-  std::cout << std::endl;
-}
+Game::Game(int nb_player) : _nb_player(nb_player), _map(nb_player) {}
 
 void Game::start_game() {
   // On créer la map
-  _map.create_map(_players);
+  _map.create_map();
   _map.render_debug();
+
+  // std::cout << "Le joueur n°" << players.at(0)->get_id() << " à gagné" <<
+  // std::endl;
+}
+
+void Game::turn_by_turn() {
+  const vector_player& players = _map.get_players();
+
+  while (players.size() > 1) {
+    for (const auto& player : players) {
+    }
+  }
+}
+
+void Game::play(Player& player) {
+  // On récupère toutes les unités du joueur
+
+  // Tant que toutes les unités ne sont pas inactif
 }
