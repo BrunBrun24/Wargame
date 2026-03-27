@@ -224,3 +224,118 @@ Course Case::_distance_between_rec(const Case& target_case,
   // Case non trouvé
   return {false, {}};
 }
+
+void Case::create_city(Case* target_case, Unit* unit) {
+  // 1. On vérifie si l'unité est un colon
+  if (unit->get_name() != UnitName::Settler) {
+    return;
+  }
+
+  // 2 On vérifie si le colon se trouve sur un terrain neutre ET à plus de 5
+  // cases d'une autre ville
+  // if (unit->get_case_unit()->get_terrain().)
+
+  // 3. On vérifie sur la case s'il a un batiment
+  if (target_case->get_terrain().get_building() != BuildingType::NoBuilding) {
+    return;
+  }
+}
+
+std::string Case::get_description() {
+  // 1. Priorité maximale : La Ville
+  if (_terrains.get_building() == BuildingType::City) {
+    return "City";
+  }
+
+  // 2. Si pas de ville : Nom de l'unité (la première sur la case)
+  if (!_units.empty()) {
+    UnitName name = _units[0]->get_name();
+
+    // Conversion de l'enum UnitName en string (basé sur ton dictionnaire
+    // UnitParser)
+    switch (name) {
+      case UnitName::Warrior:
+        return "Warrior";
+      case UnitName::Settler:
+        return "Settler";
+      case UnitName::Tank:
+        return "Tank";
+      case UnitName::Swordsman:
+        return "Swordsman";
+      case UnitName::Archer:
+        return "Archer";
+      case UnitName::Infantry:
+        return "Infantry";
+      case UnitName::Worker:
+        return "Worker";
+      case UnitName::MechanizedInfantry:
+        return "MechanizedInfantry";
+      case UnitName::Crossbowman:
+        return "Crossbowman";
+      case UnitName::FieldCannon:
+        return "FieldCannon";
+      case UnitName::MachineGun:
+        return "MachineGun";
+      case UnitName::Horseman:
+        return "Horseman";
+      case UnitName::Knight:
+        return "Knight";
+      case UnitName::Cuirassier:
+        return "Cuirassier";
+      case UnitName::ModernArmor:
+        return "ModernArmor";
+      case UnitName::Galley:
+        return "Galley";
+      case UnitName::Caravel:
+        return "Caravel";
+      case UnitName::Ironclad:
+        return "Ironclad";
+      case UnitName::Destroyer:
+        return "Destroyer";
+      case UnitName::Submarine:
+        return "Submarine";
+      case UnitName::AircraftCarrier:
+        return "AircraftCarrier";
+      case UnitName::Biplane:
+        return "Biplane";
+      case UnitName::Fighter:
+        return "Fighter";
+      case UnitName::JetFighter:
+        return "JetFighter";
+      case UnitName::Bomber:
+        return "Bomber";
+      case UnitName::JetBomber:
+        return "JetBomber";
+      default:
+        return "UnknownUnit";
+    }
+  }
+
+  // 3. Si pas d'unité : Nom du bâtiment
+  switch (_terrains.get_building()) {
+    case BuildingType::GoldMine:
+      return "GoldMine";
+    case BuildingType::IronMine:
+      return "IronMine";
+    case BuildingType::Oil:
+      return "Oil";
+    default:
+      break;
+  }
+
+  // 4. Par défaut : Le type de terrain
+  switch (_terrains.get_terrain_type()) {
+    case TerrainsType::Plains:
+      return "Plains";
+    case TerrainsType::Ocean:
+      return "Ocean";
+    case TerrainsType::Mountains:
+      return "Mountains";
+    case TerrainsType::Snow:
+      return "Snow";
+    case TerrainsType::CoastLake:
+      return "CoastLake";
+    default:
+      return "UnknownTerrain";
+  }
+}

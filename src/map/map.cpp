@@ -61,8 +61,8 @@ void Map::create_map() {
 }
 
 int Map::distance_between(Coordinate c1, Coordinate c2) {
-  Case case1 = _cases[c1.x][c1.y];
-  Case case2 = _cases[c2.x][c2.y];
+  Case& case1 = _cases[c1.x][c1.y];
+  Case& case2 = _cases[c2.x][c2.y];
 
   return static_cast<int>(
       case1.distance_between(case2).distance_traveled.size());
@@ -230,29 +230,55 @@ void Map::_generate_mountains() {
 
 void Map::render_debug() {
   for (int row = 0; row < _size_h; row++) {
+    // Décalage pour le rendu hexagonal
     if (row % 2 != 0) std::cout << "  ";
 
     for (int col = 0; col < _size_w; col++) {
-      TerrainsType t = _cases[row][col].get_terrain().get_terrain_type();
+      Case& current_case = _cases[row][col];
+      std::string element = current_case.get_description();
+      char symbol = ' ';
+      std::string color = "\033[0m";  // Reset par défaut
 
-      if (t == TerrainsType::Ocean)
-        // Bleu foncé profond (0, 0, 150)
-        std::cout << "\033[38;2;0;0;150m[O]\033[0m ";
-      else if (t == TerrainsType::CoastLake)
-        // Bleu clair turquoise (0, 180, 220)
-        std::cout << "\033[38;2;0;180;220m[C]\033[0m ";
-      else if (t == TerrainsType::Plains)
-        // Vert herbe (50, 160, 50)
-        std::cout << "\033[38;2;50;160;50m[P]\033[0m ";
-      else if (t == TerrainsType::Snow)
-        // Blanc pur brillant (255, 255, 255)
-        std::cout << "\033[38;2;255;255;255m[S]\033[0m ";
-      else if (t == TerrainsType::Mountains)
-        // Gris roche / Marron (110, 90, 70)
-        std::cout << "\033[38;2;110;90;70m[M]\033[0m ";
-      else
-        std::cout << "[" << _cases[row][col].get_terrain().get_debug_char()
-                  << "] ";
+      // 1. Détermination du symbole et de la couleur selon l'élément
+      // prioritaire
+      if (element == "City") {
+        symbol = 'H';                    // H pour Hotel de ville / City
+        color = "\033[38;2;255;215;0m";  // Or
+      } else if (element == "Warrior" || element == "Tank" ||
+                 element == "Archer") {
+        // Tu peux ajouter d'autres unités ici ou faire un test générique
+        symbol = 'U';                  // U pour Unité
+        color = "\033[38;2;255;0;0m";  // Rouge vif
+      } else if (element == "Settler" || element == "Worker") {
+        symbol = 'S';                    // S pour Support / Settler
+        color = "\033[38;2;255;165;0m";  // Orange
+      } else if (element == "GoldMine" || element == "IronMine" ||
+                 element == "Oil") {
+        symbol = 'B';                      // B pour Bâtiment
+        color = "\033[38;2;200;200;200m";  // Gris clair
+      }
+      // 2. Si c'est un terrain (cas par défaut de get_priority_element)
+      else {
+        if (element == "Ocean") {
+          symbol = 'O';
+          color = "\033[38;2;0;0;150m";
+        } else if (element == "CoastLake") {
+          symbol = 'C';
+          color = "\033[38;2;0;180;220m";
+        } else if (element == "Plains") {
+          symbol = 'P';
+          color = "\033[38;2;50;160;50m";
+        } else if (element == "Snow") {
+          symbol = 'S';
+          color = "\033[38;2;255;255;255m";
+        } else if (element == "Mountains") {
+          symbol = 'M';
+          color = "\033[38;2;110;90;70m";
+        }
+      }
+
+      // Affichage de la case avec sa couleur
+      std::cout << color << "[" << symbol << "]\033[0m ";
     }
     std::cout << std::endl;
   }
@@ -304,8 +330,8 @@ void Map::_generate_players() {
         spawn_points.push_back({r, c});
 
         // On ajoute un colon et un warrior sur la case en question
-        add_unit_to_case(_cases[r][c], UnitName::Warrior, player);
-        add_unit_to_case(_cases[r][c], UnitName::Settler, player);
+        add_unit_to_case(&_cases[r][c], UnitName::Warrior, player);
+        add_unit_to_case(&_cases[r][c], UnitName::Settler, player);
 
         std::cout << "[Spawn] Joueur placé en (" << r << ", " << c << ")"
                   << std::endl;
@@ -385,7 +411,7 @@ void Map::_generate_buildings() {
         buildings_points.push_back({r, c});
 
         // On ajoute le batiment
-        add_building_to_case(_cases[r][c], type);
+        add_building_to_case(&_cases[r][c], type);
 
         std::cout << "Bâtiment placé en (" << r << ", " << c << ")"
                   << std::endl;
@@ -427,42 +453,44 @@ void Map::delete_player(Player& player) {
   }
 }
 
-std::unique_ptr<Unit> Map::_create_unit(UnitName name, Country country) {
+std::unique_ptr<Unit> Map::_create_unit(UnitName name, Country country,
+                                        Case* c) {
   // 1. Cas des unités Neutres
   if (name == UnitName::Settler || name == UnitName::Worker) {
-    return std::make_unique<Neutral>(name, country);
+    return std::make_unique<Neutral>(name, country, c);
   }
 
   // 2. Cas des unités Maritimes
   if (name == UnitName::Galley || name == UnitName::Caravel ||
       name == UnitName::Ironclad || name == UnitName::Destroyer ||
       name == UnitName::Submarine || name == UnitName::AircraftCarrier) {
-    return std::make_unique<Maritime>(name, country);
+    return std::make_unique<Maritime>(name, country, c);
   }
 
   // 3. Cas des unités Aériennes
   if (name == UnitName::Biplane || name == UnitName::Fighter ||
       name == UnitName::JetFighter || name == UnitName::Bomber ||
       name == UnitName::JetBomber) {
-    return std::make_unique<Aerial>(name, country);
+    return std::make_unique<Aerial>(name, country, c);
   }
 
   // 4. Par défaut : Unités Terrestres
-  return std::make_unique<Terrestrial>(name, country);
+  return std::make_unique<Terrestrial>(name, country, c);
 }
 
-void Map::add_unit_to_case(Case& target_case, UnitName name,
+void Map::add_unit_to_case(Case* target_case, UnitName name,
                            std::unique_ptr<Player>& player) {
-  std::unique_ptr<Unit> new_unit = _create_unit(name, player->get_country());
+  std::unique_ptr<Unit> new_unit =
+      _create_unit(name, player->get_country(), target_case);
 
   // On ajoute l'unité sur la case
-  target_case.add_unit(new_unit.get());
+  target_case->add_unit(new_unit.get());
 
   // On associe l'unité au joueur
   player->add_unit(std::move(new_unit));
 }
 
-void Map::add_building_to_case(Case& target_case, BuildingType type) {
+void Map::add_building_to_case(Case* target_case, BuildingType type) {
   // On ajoute le batiment sur le terrain
-  target_case.get_terrain().set_building(type);
+  target_case->get_terrain().set_building(type);
 }

@@ -2,5 +2,5 @@
 
 class Neutral : public Unit {
  public:
-  Neutral(UnitName name, Country country);
+  Neutral(UnitName name, Country country, Case* case_unit);
 };

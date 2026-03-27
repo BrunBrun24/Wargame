@@ -20,9 +20,9 @@ class Map {
   void create_map();
   void render_debug();
   int distance_between(Coordinate c1, Coordinate c2);
-  void add_unit_to_case(Case& target_case, UnitName name,
+  void add_unit_to_case(Case* target_case, UnitName name,
                         std::unique_ptr<Player>& player);
-  void add_building_to_case(Case& target_case, BuildingType type);
+  void add_building_to_case(Case* target_case, BuildingType type);
 
   const vector_player& get_players() const { return _players; }
   void delete_player(Player& player);
@@ -38,7 +38,7 @@ class Map {
   void _generate_buildings();
   int _get_hex_distance(int r1, int c1, int r2, int c2) const;
 
-  std::unique_ptr<Unit> _create_unit(UnitName name, Country country);
+  std::unique_ptr<Unit> _create_unit(UnitName name, Country country, Case* c);
 
   int _size_h;
   int _size_w;

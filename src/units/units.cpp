@@ -51,10 +51,11 @@ const StrengthWeaknessMatrix unit_strength_weakness_matrix =
 
 int Unit::_id_counter = 0;
 
-Unit::Unit(UnitName name, Country country,
+Unit::Unit(UnitName name, Country country, Case* case_unit,
            std::vector<TerrainsType> allow_terrain)
     : name(name),
       country(country),
+      case_unit(case_unit),
       stats(unitData.at(name)),
       allow_terrain(allow_terrain),
       active(true),

@@ -24,7 +24,7 @@ class Case {
 
   const std::vector<Case*> get_neighbors() const { return _neighbors; }
   Country get_unit_country() const;
-  Terrains get_terrain() { return _terrains; };
+  Terrains& get_terrain() { return _terrains; };
   Country get_country() { return _country; };
 
   void set_terrain_type(TerrainsType type) { _terrains.set_terrain(type); }
@@ -38,6 +38,8 @@ class Case {
   Unit* select_best_unit(Unit* ennemy) const;
   Course distance_between(const Case& target) const;
   void set_country_neutral();
+  void create_city(Case* target_case, Unit* unit);
+  std::string get_description();
 
  private:
   Course _distance_between_rec(const Case& target,

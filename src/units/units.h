@@ -7,6 +7,8 @@
 #include "player.h"
 #include "terrains.h"
 
+class Case;
+
 enum class UnitName {
   // Neutre
   Settler,
@@ -62,7 +64,8 @@ extern const StrengthWeaknessMatrix unit_strength_weakness_matrix;
 
 class Unit {
  public:
-  Unit(UnitName name, Country country, std::vector<TerrainsType> allow_terrain);
+  Unit(UnitName name, Country country, Case* case_unit,
+       std::vector<TerrainsType> allow_terrain);
 
   int calculate_damage(const Unit* ennemy) const;
   void attack(Unit* ennemy);
@@ -70,6 +73,7 @@ class Unit {
   void switch_active() { active = !active; }
   void switch_on_guard() { on_guard = !on_guard; }
   void heal();
+  void set_case_unit(Case* c) { case_unit = c; }
 
   int get_id() const { return id; }
   std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
@@ -77,6 +81,7 @@ class Unit {
   UnitName get_name() const { return name; }
   Country get_country() const { return country; }
   int get_speed() const { return stats.speed; }
+  Case* get_case_unit() { return case_unit; }
   bool is_active() const { return active; }
   bool is_on_guard() const { return on_guard; }
 
@@ -87,6 +92,7 @@ class Unit {
   Stats stats;
   bool active;    // par default à true quand l'unité apparaît
   bool on_guard;  // par default à false quand l'unité apparaît
+  Case* case_unit;
   std::vector<TerrainsType> allow_terrain;
 
  private:

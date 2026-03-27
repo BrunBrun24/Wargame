@@ -4,5 +4,5 @@
 
 class Aerial : public Unit {
  public:
-  Aerial(UnitName name, Country country);
+  Aerial(UnitName name, Country country, Case* case_unit);
 };
