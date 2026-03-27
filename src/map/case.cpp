@@ -94,55 +94,51 @@ Course Case::movement_is_possible_rec(const Case* target_case, const Unit* unit,
 
 void Case::movement(Case* target_case, Unit* unit_to_move) {
   Course course = movement_is_possible(target_case, unit_to_move);
-  if (!course.is_possible) return;
-  // Si la case n'est pas occupée ou que les unités dessus font partie du même
-  // pays
+  if (!course.is_possible || course.distance_traveled.size() < 2) return;
+
+  // Case de repli en cas de défaite ou de case cible encore occupée
+  Case* backtrack_case =
+      course.distance_traveled[course.distance_traveled.size() - 2];
+
+  // Cas 1 : La case est libre ou alliée
   if ((target_case->get_country() == Country::Neutral) ||
       (target_case->get_country() == unit_to_move->get_country())) {
     delete_unit(unit_to_move);
     set_country_neutral();
+
     target_case->add_unit(unit_to_move);
-  } else {
-    // Un ennemi est présent sur la case cible, on lance le combat
-    // On demande à la case cible de choisir son meilleur défenseur contre notre
-    // unité
-    Unit* best_defender = target_case->select_best_unit(unit_to_move);
-    unit_to_move->attack(best_defender);
+    unit_to_move->set_case_unit(target_case);
+    return;
+  }
 
-    // On vérifie si le défenseur est toujours en vie
-    if (best_defender->get_stats().hp > 0) {
-      // On vérifie si l'unité qui se déplace est toujours en vie
-      if (unit_to_move->get_stats().hp > 0) {
-        // On le met une case -1 de son parcours
-        delete_unit(unit_to_move);
-        set_country_neutral();
-        course.distance_traveled[course.distance_traveled.size() - 1]->add_unit(
-            unit_to_move);
-      }
+  // Cas 2 : Un ennemi est présent
+  Unit* best_defender = target_case->select_best_unit(unit_to_move);
+  unit_to_move->attack(best_defender);
+
+  // Si le défenseur meurt
+  if (!(best_defender->get_stats().hp > 0)) {
+    target_case->delete_unit(best_defender);
+    target_case->set_country_neutral();
+  }
+
+  // Gestion de l'attaquant après combat
+  if (unit_to_move->get_stats().hp > 0) {
+    delete_unit(unit_to_move);
+    set_country_neutral();
+
+    // Si la case cible est maintenant vide, on avance
+    if (target_case->get_country() == Country::Neutral) {
+      target_case->add_unit(unit_to_move);
+      unit_to_move->set_case_unit(target_case);
     } else {
-      target_case->delete_unit(best_defender);
-      target_case->set_country_neutral();
-
-      // On vérifie si l'unité qui se déplace est toujours en vie
-      if (unit_to_move->get_stats().hp > 0) {
-        // On vérifie s'il y a toujours des unités sur la case cible
-        if (target_case->get_country() == Country::Neutral) {
-          // S'il y en a plus, on déplace l'unité dessus
-          delete_unit(unit_to_move);
-          set_country_neutral();
-          target_case->add_unit(unit_to_move);
-        } else {
-          // Sinon on le met une case -1 de son parcours
-          delete_unit(unit_to_move);
-          set_country_neutral();
-          course.distance_traveled[course.distance_traveled.size() - 1]
-              ->add_unit(unit_to_move);
-        }
-      } else {
-        delete_unit(unit_to_move);
-        set_country_neutral();
-      }
+      // Sinon on recule sur la case précédente
+      backtrack_case->add_unit(unit_to_move);
+      unit_to_move->set_case_unit(backtrack_case);
     }
+  } else {
+    // L'attaquant est mort
+    delete_unit(unit_to_move);
+    set_country_neutral();
   }
 }
 
