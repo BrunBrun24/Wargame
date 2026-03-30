@@ -38,8 +38,10 @@ class Case {
   Unit* select_best_unit(Unit* ennemy) const;
   Course distance_between(const Case& target) const;
   void set_country_neutral();
+  bool create_city_is_possible(Case* target_case, Unit* unit);
   void create_city(Case* target_case, Unit* unit);
   std::string get_description();
+  Course _calculate_first_building_distance(BuildingType type);
 
  private:
   Course _distance_between_rec(const Case& target,

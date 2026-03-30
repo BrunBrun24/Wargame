@@ -1,5 +1,8 @@
 #include "case.h"
 
+#include <queue>
+#include <unordered_map>
+
 Case::Case(TerrainsType type) : _terrains(type), _country(Country::Neutral) {}
 
 Case::Case(TerrainsType type, Country country)
@@ -222,20 +225,33 @@ Course Case::_distance_between_rec(const Case& target_case,
   return {false, {}};
 }
 
-void Case::create_city(Case* target_case, Unit* unit) {
+bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
   // 1. On vérifie si l'unité est un colon
   if (unit->get_name() != UnitName::Settler) {
-    return;
+    return false;
   }
 
   // 2 On vérifie si le colon se trouve sur un terrain neutre ET à plus de 5
   // cases d'une autre ville
-  // if (unit->get_case_unit()->get_terrain().)
+  if ((unit->get_case_unit()->get_country() != Country::Neutral) &&
+      (_calculate_first_building_distance(BuildingType::City)
+               .distance_traveled.size() -
+           1 <
+       5)) {
+    return false;
+  }
 
   // 3. On vérifie sur la case s'il a un batiment
   if (target_case->get_terrain().get_building() != BuildingType::NoBuilding) {
-    return;
+    return false;
   }
+
+  return true;
+}
+
+void Case::create_city(Case* target_case, Unit* unit) {
+  target_case->get_terrain().set_building(BuildingType::City);
+  target_case->delete_unit(unit);
 }
 
 std::string Case::get_description() {
@@ -335,4 +351,52 @@ std::string Case::get_description() {
     default:
       return "UnknownTerrain";
   }
+}
+
+Course Case::_calculate_first_building_distance(BuildingType type) {
+  // La file contient les cases à visiter
+  std::queue<Case*> queue;
+  // Permet de savoir si une case a été vue ET de stocker d'où on vient (parent)
+  // pour reconstruire le chemin à la fin.
+  std::unordered_map<Case*, Case*> parent_map;
+
+  queue.push(this);
+  parent_map[this] = nullptr;  // La case de départ n'a pas de parent
+
+  Case* target = nullptr;
+
+  while (!queue.empty()) {
+    Case* current = queue.front();
+    queue.pop();
+
+    // 1. Condition d'arrêt : on a trouvé le bâtiment
+    if (current->get_terrain().get_building() == type) {
+      target = current;
+      break;
+    }
+
+    // 2. Exploration des voisins
+    for (Case* neighbor : current->_neighbors) {
+      // Si le voisin n'a pas encore été visité
+      if (parent_map.find(neighbor) == parent_map.end()) {
+        parent_map[neighbor] = current;
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  // 3. Si on n'a rien trouvé
+  if (target == nullptr) {
+    return {false, {}};
+  }
+
+  // 4. Reconstruction du chemin en remontant les parents
+  std::vector<Case*> path;
+  Case* backtrack = target;
+  while (backtrack != nullptr) {
+    path.insert(path.begin(), backtrack);
+    backtrack = parent_map[backtrack];
+  }
+
+  return {true, path};
 }
