@@ -60,6 +60,77 @@ void Map::create_map() {
   _generate_buildings();
 }
 
+void Map::render_debug() {
+  for (int row = 0; row < _size_h; row++) {
+    // Décalage pour le rendu hexagonal
+    if (row % 2 != 0) std::cout << "  ";
+
+    for (int col = 0; col < _size_w; col++) {
+      Case& current_case = _cases[row][col];
+      std::string element = current_case.get_description();
+      char symbol = ' ';
+      std::string color = "\033[0m";  // Reset par défaut
+
+      // 1. Détermination du symbole et de la couleur selon l'élément
+      // prioritaire
+      if (element == "City") {
+        symbol = 'H';                    // H pour Hotel de ville / City
+        color = "\033[38;2;255;215;0m";  // Or
+      } else if (element == "Warrior" || element == "Tank" ||
+                 element == "Archer") {
+        // Tu peux ajouter d'autres unités ici ou faire un test générique
+        symbol = 'U';                  // U pour Unité
+        color = "\033[38;2;255;0;0m";  // Rouge vif
+      } else if (element == "Settler" || element == "Worker") {
+        symbol = 'S';                    // S pour Support / Settler
+        color = "\033[38;2;255;165;0m";  // Orange
+      } else if (element == "GoldMine" || element == "IronMine" ||
+                 element == "Oil") {
+        symbol = 'B';                      // B pour Bâtiment
+        color = "\033[38;2;200;200;200m";  // Gris clair
+      } else if (element == "AAAA") {
+        symbol = 'Z';                  // B pour Bâtiment
+        color = "\033[38;2;255;0;0m";  // Gris clair
+        // 2. Si c'est un terrain (cas par défaut de get_priority_element)
+      }
+      // 2. Si c'est un terrain (cas par défaut de get_priority_element)
+      else {
+        if (element == "Ocean") {
+          symbol = 'O';
+          color = "\033[38;2;0;0;150m";
+        } else if (element == "CoastLake") {
+          symbol = 'C';
+          color = "\033[38;2;0;180;220m";
+        } else if (element == "Plains") {
+          symbol = 'P';
+          color = "\033[38;2;50;160;50m";
+        } else if (element == "Snow") {
+          symbol = 'S';
+          color = "\033[38;2;255;255;255m";
+        } else if (element == "Mountains") {
+          symbol = 'M';
+          color = "\033[38;2;110;90;70m";
+        }
+      }
+
+      // Affichage de la case avec sa couleur
+      std::cout << color << "[" << symbol << "]\033[0m ";
+    }
+    std::cout << std::endl;
+  }
+}
+
+void Map::delete_player(Player& player) {
+  // On cherche le joueur par son ID
+  auto it = std::find_if(_players.begin(), _players.end(), [&](const auto& p) {
+    return p->get_id() == player.get_id();
+  });
+
+  if (it != _players.end()) {
+    _players.erase(it);
+  }
+}
+
 int Map::distance_between(Coordinate c1, Coordinate c2) {
   Case& case1 = _cases[c1.x][c1.y];
   Case& case2 = _cases[c2.x][c2.y];
@@ -68,37 +139,69 @@ int Map::distance_between(Coordinate c1, Coordinate c2) {
       case1.distance_between(case2).distance_traveled.size());
 }
 
+void Map::add_unit_to_case(Case* target_case, UnitName name,
+                           std::unique_ptr<Player>& player) {
+  std::unique_ptr<Unit> new_unit =
+      _create_unit(name, player->get_country(), target_case);
+
+  // On ajoute l'unité sur la case
+  target_case->add_unit(new_unit.get());
+
+  // On associe l'unité au joueur
+  player->add_unit(std::move(new_unit));
+}
+
+void Map::add_building_to_case(Case* target_case, BuildingType type) {
+  // On ajoute le batiment sur le terrain
+  target_case->get_terrain().set_building(type);
+}
+
 void Map::_link_hex_neighbors(int row, int col) {
-  std::vector<std::pair<int, int>> directions;
+  Case* current = &_cases[row][col];
+
+  // Voisins constants (Gauche et Droite)
+  if (col > 0) current->add_neighbor(&_cases[row][col - 1]);
+  if (col < _size_w - 1) current->add_neighbor(&_cases[row][col + 1]);
 
   if (row % 2 == 0) {
-    directions = {
-        {row - 1, col},      // Haut Gauche
-        {row - 1, col + 1},  // Haut Droite
-        {row, col - 1},      // Gauche
-        {row, col + 1},      // Droite
-        {row + 1, col},      // Bas Gauche
-        {row + 1, col + 1}   // Bas Droite
-    };
+    // Ligne PAIRE
+    // En haut (Gauche / Droite)
+    if (row > 0) {
+      current->add_neighbor(&_cases[row - 1][col]);
+      if (col > 0) current->add_neighbor(&_cases[row - 1][col - 1]);
+    }
+    // En bas (Gauche / Droite)
+    if (row < _size_h - 1) {
+      current->add_neighbor(&_cases[row + 1][col]);
+      if (col > 0) current->add_neighbor(&_cases[row + 1][col - 1]);
+    }
   } else {
-    directions = {
-        {row - 1, col - 1},  // Haut Gauche
-        {row - 1, col},      // Haut Droite
-        {row, col - 1},      // Gauche
-        {row, col + 1},      // Droite
-        {row + 1, col - 1},  // Bas Gauche
-        {row + 1, col}       // Bas Droite
-    };
-  }
-
-  for (auto& dir : directions) {
-    int r = dir.first;
-    int c = dir.second;
-
-    if (r >= 0 && r < _size_h && c >= 0 && c < _size_w) {
-      _cases[row][col].add_neighbor(&_cases[r][c]);
+    // Ligne IMPAIRE
+    // En haut (Gauche / Droite)
+    if (row > 0) {
+      current->add_neighbor(&_cases[row - 1][col]);
+      if (col < _size_w - 1) current->add_neighbor(&_cases[row - 1][col + 1]);
+    }
+    // En bas (Gauche / Droite)
+    if (row < _size_h - 1) {
+      current->add_neighbor(&_cases[row + 1][col]);
+      if (col < _size_w - 1) current->add_neighbor(&_cases[row + 1][col + 1]);
     }
   }
+}
+
+int Map::_get_hex_distance(int r1, int c1, int r2, int c2) const {
+  // Conversion Row/Col (offset) vers Cube (x, y, z)
+  int x1 = c1 - (r1 + (r1 & 1)) / 2;
+  int z1 = r1;
+  int y1 = -x1 - z1;
+
+  int x2 = c2 - (r2 + (r2 & 1)) / 2;
+  int z2 = r2;
+  int y2 = -x2 - z2;
+
+  // La distance hexagonale est le maximum des différences absolues des axes
+  return std::max({std::abs(x1 - x2), std::abs(y1 - y2), std::abs(z1 - z2)});
 }
 
 void Map::_generate_ocean() {
@@ -144,28 +247,6 @@ void Map::_generate_plains() {
   }
 }
 
-void Map::_generate_snow() {
-  // Mettre la neige à moins de 5 blocs en haut
-  for (int row = 0; row < 4; row++) {
-    for (int col = 0; col < _size_w; col++) {
-      if (_cases[row][col].get_terrain().get_terrain_type() ==
-          TerrainsType::Plains) {
-        _cases[row][col].set_terrain_type(TerrainsType::Snow);
-      }
-    }
-  }
-
-  // Mettre la neige à moins de 5 blocs en bas
-  for (int row = _size_h - 4; row < _size_h; row++) {
-    for (int col = 0; col < _size_w; col++) {
-      if (_cases[row][col].get_terrain().get_terrain_type() ==
-          TerrainsType::Plains) {
-        _cases[row][col].set_terrain_type(TerrainsType::Snow);
-      }
-    }
-  }
-}
-
 void Map::_generate_coasts() {
   // On répète 3 fois pour la distance de 3 cases
   for (int dist = 0; dist < 2; dist++) {
@@ -199,6 +280,28 @@ void Map::_generate_coasts() {
   }
 }
 
+void Map::_generate_snow() {
+  // Mettre la neige à moins de 5 blocs en haut
+  for (int row = 0; row < 4; row++) {
+    for (int col = 0; col < _size_w; col++) {
+      if (_cases[row][col].get_terrain().get_terrain_type() ==
+          TerrainsType::Plains) {
+        _cases[row][col].set_terrain_type(TerrainsType::Snow);
+      }
+    }
+  }
+
+  // Mettre la neige à moins de 5 blocs en bas
+  for (int row = _size_h - 4; row < _size_h; row++) {
+    for (int col = 0; col < _size_w; col++) {
+      if (_cases[row][col].get_terrain().get_terrain_type() ==
+          TerrainsType::Plains) {
+        _cases[row][col].set_terrain_type(TerrainsType::Snow);
+      }
+    }
+  }
+}
+
 void Map::_generate_mountains() {
   for (int row = 0; row < _size_h; row++) {
     for (int col = 0; col < _size_w; col++) {
@@ -225,62 +328,6 @@ void Map::_generate_mountains() {
         }
       }
     }
-  }
-}
-
-void Map::render_debug() {
-  for (int row = 0; row < _size_h; row++) {
-    // Décalage pour le rendu hexagonal
-    if (row % 2 != 0) std::cout << "  ";
-
-    for (int col = 0; col < _size_w; col++) {
-      Case& current_case = _cases[row][col];
-      std::string element = current_case.get_description();
-      char symbol = ' ';
-      std::string color = "\033[0m";  // Reset par défaut
-
-      // 1. Détermination du symbole et de la couleur selon l'élément
-      // prioritaire
-      if (element == "City") {
-        symbol = 'H';                    // H pour Hotel de ville / City
-        color = "\033[38;2;255;215;0m";  // Or
-      } else if (element == "Warrior" || element == "Tank" ||
-                 element == "Archer") {
-        // Tu peux ajouter d'autres unités ici ou faire un test générique
-        symbol = 'U';                  // U pour Unité
-        color = "\033[38;2;255;0;0m";  // Rouge vif
-      } else if (element == "Settler" || element == "Worker") {
-        symbol = 'S';                    // S pour Support / Settler
-        color = "\033[38;2;255;165;0m";  // Orange
-      } else if (element == "GoldMine" || element == "IronMine" ||
-                 element == "Oil") {
-        symbol = 'B';                      // B pour Bâtiment
-        color = "\033[38;2;200;200;200m";  // Gris clair
-      }
-      // 2. Si c'est un terrain (cas par défaut de get_priority_element)
-      else {
-        if (element == "Ocean") {
-          symbol = 'O';
-          color = "\033[38;2;0;0;150m";
-        } else if (element == "CoastLake") {
-          symbol = 'C';
-          color = "\033[38;2;0;180;220m";
-        } else if (element == "Plains") {
-          symbol = 'P';
-          color = "\033[38;2;50;160;50m";
-        } else if (element == "Snow") {
-          symbol = 'S';
-          color = "\033[38;2;255;255;255m";
-        } else if (element == "Mountains") {
-          symbol = 'M';
-          color = "\033[38;2;110;90;70m";
-        }
-      }
-
-      // Affichage de la case avec sa couleur
-      std::cout << color << "[" << symbol << "]\033[0m ";
-    }
-    std::cout << std::endl;
   }
 }
 
@@ -424,35 +471,6 @@ void Map::_generate_buildings() {
   std::cout << std::endl;
 }
 
-/**
- * @brief Calcule la distance réelle sur une grille hexagonale.
- * Utilise la conversion en coordonnées cubiques pour un résultat exact en O(1).
- */
-int Map::_get_hex_distance(int r1, int c1, int r2, int c2) const {
-  // Conversion Row/Col (offset) vers Cube (x, y, z)
-  int x1 = c1 - (r1 + (r1 & 1)) / 2;
-  int z1 = r1;
-  int y1 = -x1 - z1;
-
-  int x2 = c2 - (r2 + (r2 & 1)) / 2;
-  int z2 = r2;
-  int y2 = -x2 - z2;
-
-  // La distance hexagonale est le maximum des différences absolues des axes
-  return std::max({std::abs(x1 - x2), std::abs(y1 - y2), std::abs(z1 - z2)});
-}
-
-void Map::delete_player(Player& player) {
-  // On cherche le joueur par son ID
-  auto it = std::find_if(_players.begin(), _players.end(), [&](const auto& p) {
-    return p->get_id() == player.get_id();
-  });
-
-  if (it != _players.end()) {
-    _players.erase(it);
-  }
-}
-
 std::unique_ptr<Unit> Map::_create_unit(UnitName name, Country country,
                                         Case* c) {
   // 1. Cas des unités Neutres
@@ -476,21 +494,4 @@ std::unique_ptr<Unit> Map::_create_unit(UnitName name, Country country,
 
   // 4. Par défaut : Unités Terrestres
   return std::make_unique<Terrestrial>(name, country, c);
-}
-
-void Map::add_unit_to_case(Case* target_case, UnitName name,
-                           std::unique_ptr<Player>& player) {
-  std::unique_ptr<Unit> new_unit =
-      _create_unit(name, player->get_country(), target_case);
-
-  // On ajoute l'unité sur la case
-  target_case->add_unit(new_unit.get());
-
-  // On associe l'unité au joueur
-  player->add_unit(std::move(new_unit));
-}
-
-void Map::add_building_to_case(Case* target_case, BuildingType type) {
-  // On ajoute le batiment sur le terrain
-  target_case->get_terrain().set_building(type);
 }
