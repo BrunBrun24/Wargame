@@ -136,7 +136,7 @@ int Map::distance_between(Coordinate c1, Coordinate c2) {
   Case& case2 = _cases[c2.x][c2.y];
 
   return static_cast<int>(
-      case1.distance_between(case2).distance_traveled.size());
+      case1.distance_between(&case2).distance_traveled.size());
 }
 
 void Map::add_unit_to_case(Case* target_case, UnitName name,
