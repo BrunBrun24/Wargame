@@ -30,10 +30,7 @@ class Case {
   void set_terrain_type(TerrainsType type) { _terrains.set_terrain(type); }
   void set_country(Country country) { _country = country; }
 
-  Course movement_is_possible(const Case* target_case, const Unit* unit) const;
-  Course movement_is_possible_rec(const Case* target_case, const Unit* unit,
-                                  int speed,
-                                  std::vector<const Case*>& visited) const;
+  Course movement_is_possible(Case* target_case, const Unit* unit);
   void movement(Case* target_case, Unit* unit_to_move);
   Unit* select_best_unit(Unit* ennemy) const;
   Course distance_between(const Case& target) const;

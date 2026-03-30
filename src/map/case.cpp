@@ -27,70 +27,69 @@ void Case::set_country_neutral() {
   }
 }
 
-/**
- * @brief Vérifie si un déplacement vers une case cible est possible et calcule
- * le chemin.
- * @param target_case La case de destination visée.
- * @param unit L'unité qui effectue le mouvement.
- * @return course Structure contenant la validité du trajet et la liste des
- * cases traversées.
- */
-Course Case::movement_is_possible(const Case* target_case,
-                                  const Unit* unit) const {
+Course Case::movement_is_possible(Case* target_case, const Unit* unit) {
   if (this == target_case) {
-    return {true, {const_cast<Case*>(this)}};
+    return {true, {this}};
   }
 
-  std::vector<const Case*> visited;
-  return movement_is_possible_rec(target_case, unit, unit->get_speed(),
-                                  visited);
-}
+  int max_speed = unit->get_speed();
 
-/**
- * @brief Vérifie récursivement si un déplacement vers une case cible est
- * possible.
- * * @param target_case La case de destination visée.
- * @param unit L'unité qui effectue le mouvement.
- * @param speed Les points de mouvement restants.
- * @param visited Liste des cases déjà explorées pour éviter les boucles
- * infinies.
- * @return course Structure contenant la validité du chemin et la liste des
- * cases traversées.
- */
-Course Case::movement_is_possible_rec(const Case* target_case, const Unit* unit,
-                                      int speed,
-                                      std::vector<const Case*>& visited) const {
-  if (speed < 0) {
-    return {false, {}};
-  }
+  // File de paires : la case à explorer et la distance actuelle depuis le
+  // départ
+  std::queue<std::pair<Case*, int>> queue;
+  // Map pour suivre les parents et la distance minimale pour atteindre chaque
+  // case
+  std::unordered_map<Case*, Case*> parent_map;
 
-  if (this == target_case) {
-    return {true, {const_cast<Case*>(this)}};
-  }
+  queue.push({this, 0});
+  parent_map[this] = nullptr;
 
-  visited.push_back(this);
+  Case* reached_target = nullptr;
 
-  for (const Case* neighbor : _neighbors) {
-    // Vérification terrain
-    if (!unit->find_terrain(neighbor->_terrains.get_terrain_type())) {
+  while (!queue.empty()) {
+    auto [current, current_dist] = queue.front();
+    queue.pop();
+
+    // Si on a trouvé la cible, on s'arrête
+    if (current == target_case) {
+      reached_target = current;
+      break;
+    }
+
+    // Si on a atteint la limite de vitesse, on n'explore pas les voisins de
+    // cette case
+    if (current_dist >= max_speed) {
       continue;
     }
 
-    // Éviter de repasser sur une case déjà vue
-    if (std::find(visited.begin(), visited.end(), neighbor) != visited.end()) {
-      continue;
-    }
+    for (Case* neighbor : current->_neighbors) {
+      // Vérification du terrain (Spécifique aux unités)
+      if (!unit->find_terrain(neighbor->_terrains.get_terrain_type())) {
+        continue;
+      }
 
-    // Appel récursif
-    Course result = neighbor->movement_is_possible_rec(target_case, unit,
-                                                       speed - 1, visited);
+      // Vérification s'il y a une unité ennemie sur le terrain
+      if (!unit->find_terrain(neighbor->_terrains.get_terrain_type())) {
+        continue;
+      }
 
-    // Si un chemin a été trouvé par ce voisin
-    if (result.is_possible) {
-      result.distance_traveled.insert(result.distance_traveled.begin(),
-                                      const_cast<Case*>(this));
-      return result;
+      // Vérification si déjà visité
+      if (parent_map.find(neighbor) == parent_map.end()) {
+        parent_map[neighbor] = current;
+        queue.push({neighbor, current_dist + 1});
+      }
     }
+  }
+
+  // Reconstruction du chemin si la cible a été atteinte
+  if (reached_target) {
+    std::vector<Case*> path;
+    Case* backtrack = reached_target;
+    while (backtrack != nullptr) {
+      path.insert(path.begin(), backtrack);
+      backtrack = parent_map[backtrack];
+    }
+    return {true, path};
   }
 
   return {false, {}};
