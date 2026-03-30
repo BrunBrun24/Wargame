@@ -194,13 +194,51 @@ Unit* Case::select_best_unit(Unit* ennemy) const {
   return best_unit;
 }
 
-Course Case::distance_between(const Case& target_case) const {
-  if (this == &target_case) {
-    return {true, {const_cast<Case*>(this)}};
+Course Case::distance_between(Case* target_case) {
+  if (this == target_case) {
+    return {true, {this}};
   }
 
-  std::vector<const Case*> visited;
-  return _distance_between_rec(target_case, visited);
+  // File pour le parcours en largeur
+  std::queue<Case*> queue;
+  // Map pour reconstruire le chemin (Enfant -> Parent)
+  std::unordered_map<Case*, Case*> parent_map;
+
+  queue.push(this);
+  parent_map[this] = nullptr;
+
+  Case* reached_target = nullptr;
+
+  while (!queue.empty()) {
+    Case* current = queue.front();
+    queue.pop();
+
+    if (current == target_case) {
+      reached_target = current;
+      break;
+    }
+
+    for (Case* neighbor : current->get_neighbors()) {
+      // Si le voisin n'a pas encore été visité
+      if (parent_map.find(neighbor) == parent_map.end()) {
+        parent_map[neighbor] = current;
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  // Si on a trouvé la cible, on reconstruit le chemin le plus court
+  if (reached_target) {
+    std::vector<Case*> path;
+    Case* backtrack = reached_target;
+    while (backtrack != nullptr) {
+      path.insert(path.begin(), backtrack);
+      backtrack = parent_map.at(backtrack);
+    }
+    return {true, path};
+  }
+
+  return {false, {}};
 }
 
 Course Case::_calculate_first_building_distance(BuildingType type) {
@@ -362,33 +400,4 @@ std::string Case::get_description() {
     default:
       return "UnknownTerrain";
   }
-}
-
-Course Case::_distance_between_rec(const Case& target_case,
-                                   std::vector<const Case*>& visited) const {
-  if (this == &target_case) {
-    return {true, {const_cast<Case*>(this)}};
-  }
-
-  visited.push_back(this);
-
-  for (const Case* neighbor : _neighbors) {
-    // Éviter de repasser sur une case déjà vue
-    if (std::find(visited.begin(), visited.end(), neighbor) != visited.end()) {
-      continue;
-    }
-
-    // Appel récursif
-    Course result = neighbor->_distance_between_rec(target_case, visited);
-
-    // Si un chemin a été trouvé par ce voisin
-    if (result.is_possible) {
-      result.distance_traveled.insert(result.distance_traveled.begin(),
-                                      const_cast<Case*>(this));
-      return result;
-    }
-  }
-
-  // Case non trouvé
-  return {false, {}};
 }

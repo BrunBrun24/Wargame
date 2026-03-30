@@ -34,8 +34,8 @@ class Case {
   /** @return La meilleure unité de la case pour affronter l'ennemi */
   Unit* select_best_unit(Unit* ennemy) const;
 
-  /** @return Le chemin le plus court pour aller à la case ciblé */
-  Course distance_between(const Case& target) const;
+  /** @return Le chemin le plus court pour aller à la case cible */
+  Course distance_between(Case* target_case);
 
   /** @return Le chemin le plus court pour trouver le type d'un bâtiment */
   Course _calculate_first_building_distance(BuildingType type);
@@ -51,9 +51,6 @@ class Case {
   std::string get_description();
 
  private:
-  Course _distance_between_rec(const Case& target,
-                               std::vector<const Case*>& visited) const;
-
   Country _country;
   Terrains _terrains;
   std::vector<Case*> _neighbors;  // Cases adjacentes
