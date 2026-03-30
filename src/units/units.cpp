@@ -66,10 +66,8 @@ Unit::Unit(UnitName name, Country country, Case* case_unit,
 void Unit::attack(Unit* ennemy) {
   // On attaque l'ennemie
   ennemy->stats.hp -= calculate_damage(this);
-  // Si l'ennemie est toujours en vie il riposte
-  if (ennemy->stats.hp > 0) {
-    stats.hp -= calculate_damage(ennemy);
-  }
+  // L'ennemie riposte
+  stats.hp -= calculate_damage(ennemy);
 }
 
 bool Unit::find_terrain(const TerrainsType& target_terrain) const {
