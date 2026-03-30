@@ -21,10 +21,44 @@ void Case::add_unit(Unit* unit) {
   unit->set_case_unit(this);
 };
 
-void Case::set_country_neutral() {
-  if (_units.size() == 0) {
-    _country = Country::Neutral;
+void Case::delete_unit(Unit* unit_to_move) {
+  // On cherche l'unité par son ID
+  auto it = std::find_if(_units.begin(), _units.end(), [&](Unit* u) {
+    return u->get_id() == unit_to_move->get_id();
+  });
+
+  if (it != _units.end()) {
+    _units.erase(it);
   }
+}
+
+bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
+  // 1. On vérifie si l'unité est un colon
+  if (unit->get_name() != UnitName::Settler) {
+    return false;
+  }
+
+  // 2 On vérifie si le colon se trouve sur un terrain neutre ET à plus de 5
+  // cases d'une autre ville
+  if ((unit->get_case_unit()->get_country() != Country::Neutral) &&
+      (_calculate_first_building_distance(BuildingType::City)
+               .distance_traveled.size() -
+           1 <
+       5)) {
+    return false;
+  }
+
+  // 3. On vérifie sur la case s'il a un batiment
+  if (target_case->get_terrain().get_building() != BuildingType::NoBuilding) {
+    return false;
+  }
+
+  return true;
+}
+
+void Case::create_city(Case* target_case, Unit* unit) {
+  target_case->get_terrain().set_building(BuildingType::City);
+  target_case->delete_unit(unit);
 }
 
 Course Case::movement_is_possible(Case* target_case, const Unit* unit) {
@@ -145,32 +179,6 @@ void Case::movement(Case* target_case, Unit* unit_to_move) {
   }
 }
 
-void Case::delete_unit(Unit* unit_to_move) {
-  // On cherche l'unité par son ID
-  auto it = std::find_if(_units.begin(), _units.end(), [&](Unit* u) {
-    return u->get_id() == unit_to_move->get_id();
-  });
-
-  if (it != _units.end()) {
-    _units.erase(it);
-  }
-}
-
-Country Case::get_unit_country() const {
-  if (_units.empty()) {
-    return Country::Neutral;
-  }
-
-  return _units.front()->get_country();
-}
-
-/**
- * @brief Sélectionne l'unité de la case ayant le plus de chances d'anéantir
- * l'ennemi.
- * @param ennemy L'unité adverse cible pour laquelle on cherche le meilleur
- * contre.
- * @return Unit L'objet unité ayant le score d'efficacité le plus élevé.
- */
 Unit* Case::select_best_unit(Unit* ennemy) const {
   Unit* best_unit = nullptr;
   int damage = 0;
@@ -195,62 +203,66 @@ Course Case::distance_between(const Case& target_case) const {
   return _distance_between_rec(target_case, visited);
 }
 
-Course Case::_distance_between_rec(const Case& target_case,
-                                   std::vector<const Case*>& visited) const {
-  if (this == &target_case) {
-    return {true, {const_cast<Case*>(this)}};
-  }
+Course Case::_calculate_first_building_distance(BuildingType type) {
+  // La file contient les cases à visiter
+  std::queue<Case*> queue;
+  // Permet de savoir si une case a été vue ET de stocker d'où on vient (parent)
+  // pour reconstruire le chemin à la fin.
+  std::unordered_map<Case*, Case*> parent_map;
 
-  visited.push_back(this);
+  queue.push(this);
+  parent_map[this] = nullptr;  // La case de départ n'a pas de parent
 
-  for (const Case* neighbor : _neighbors) {
-    // Éviter de repasser sur une case déjà vue
-    if (std::find(visited.begin(), visited.end(), neighbor) != visited.end()) {
-      continue;
+  Case* target = nullptr;
+
+  while (!queue.empty()) {
+    Case* current = queue.front();
+    queue.pop();
+
+    // 1. Condition d'arrêt : on a trouvé le bâtiment
+    if (current->get_terrain().get_building() == type) {
+      target = current;
+      break;
     }
 
-    // Appel récursif
-    Course result = neighbor->_distance_between_rec(target_case, visited);
-
-    // Si un chemin a été trouvé par ce voisin
-    if (result.is_possible) {
-      result.distance_traveled.insert(result.distance_traveled.begin(),
-                                      const_cast<Case*>(this));
-      return result;
+    // 2. Exploration des voisins
+    for (Case* neighbor : current->_neighbors) {
+      // Si le voisin n'a pas encore été visité
+      if (parent_map.find(neighbor) == parent_map.end()) {
+        parent_map[neighbor] = current;
+        queue.push(neighbor);
+      }
     }
   }
 
-  // Case non trouvé
-  return {false, {}};
+  // 3. Si on n'a rien trouvé
+  if (target == nullptr) {
+    return {false, {}};
+  }
+
+  // 4. Reconstruction du chemin en remontant les parents
+  std::vector<Case*> path;
+  Case* backtrack = target;
+  while (backtrack != nullptr) {
+    path.insert(path.begin(), backtrack);
+    backtrack = parent_map[backtrack];
+  }
+
+  return {true, path};
 }
 
-bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
-  // 1. On vérifie si l'unité est un colon
-  if (unit->get_name() != UnitName::Settler) {
-    return false;
+void Case::set_country_neutral() {
+  if (_units.size() == 0) {
+    _country = Country::Neutral;
   }
-
-  // 2 On vérifie si le colon se trouve sur un terrain neutre ET à plus de 5
-  // cases d'une autre ville
-  if ((unit->get_case_unit()->get_country() != Country::Neutral) &&
-      (_calculate_first_building_distance(BuildingType::City)
-               .distance_traveled.size() -
-           1 <
-       5)) {
-    return false;
-  }
-
-  // 3. On vérifie sur la case s'il a un batiment
-  if (target_case->get_terrain().get_building() != BuildingType::NoBuilding) {
-    return false;
-  }
-
-  return true;
 }
 
-void Case::create_city(Case* target_case, Unit* unit) {
-  target_case->get_terrain().set_building(BuildingType::City);
-  target_case->delete_unit(unit);
+Country Case::get_unit_country() const {
+  if (_units.empty()) {
+    return Country::Neutral;
+  }
+
+  return _units.front()->get_country();
 }
 
 std::string Case::get_description() {
@@ -352,50 +364,31 @@ std::string Case::get_description() {
   }
 }
 
-Course Case::_calculate_first_building_distance(BuildingType type) {
-  // La file contient les cases à visiter
-  std::queue<Case*> queue;
-  // Permet de savoir si une case a été vue ET de stocker d'où on vient (parent)
-  // pour reconstruire le chemin à la fin.
-  std::unordered_map<Case*, Case*> parent_map;
+Course Case::_distance_between_rec(const Case& target_case,
+                                   std::vector<const Case*>& visited) const {
+  if (this == &target_case) {
+    return {true, {const_cast<Case*>(this)}};
+  }
 
-  queue.push(this);
-  parent_map[this] = nullptr;  // La case de départ n'a pas de parent
+  visited.push_back(this);
 
-  Case* target = nullptr;
-
-  while (!queue.empty()) {
-    Case* current = queue.front();
-    queue.pop();
-
-    // 1. Condition d'arrêt : on a trouvé le bâtiment
-    if (current->get_terrain().get_building() == type) {
-      target = current;
-      break;
+  for (const Case* neighbor : _neighbors) {
+    // Éviter de repasser sur une case déjà vue
+    if (std::find(visited.begin(), visited.end(), neighbor) != visited.end()) {
+      continue;
     }
 
-    // 2. Exploration des voisins
-    for (Case* neighbor : current->_neighbors) {
-      // Si le voisin n'a pas encore été visité
-      if (parent_map.find(neighbor) == parent_map.end()) {
-        parent_map[neighbor] = current;
-        queue.push(neighbor);
-      }
+    // Appel récursif
+    Course result = neighbor->_distance_between_rec(target_case, visited);
+
+    // Si un chemin a été trouvé par ce voisin
+    if (result.is_possible) {
+      result.distance_traveled.insert(result.distance_traveled.begin(),
+                                      const_cast<Case*>(this));
+      return result;
     }
   }
 
-  // 3. Si on n'a rien trouvé
-  if (target == nullptr) {
-    return {false, {}};
-  }
-
-  // 4. Reconstruction du chemin en remontant les parents
-  std::vector<Case*> path;
-  Case* backtrack = target;
-  while (backtrack != nullptr) {
-    path.insert(path.begin(), backtrack);
-    backtrack = parent_map[backtrack];
-  }
-
-  return {true, path};
+  // Case non trouvé
+  return {false, {}};
 }
