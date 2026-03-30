@@ -63,20 +63,6 @@ Unit::Unit(UnitName name, Country country, Case* case_unit,
   this->id = _id_counter++;
 }
 
-void Unit::attack(Unit* ennemy) {
-  // On attaque l'ennemie
-  ennemy->stats.hp -= calculate_damage(this);
-  // L'ennemie riposte
-  stats.hp -= calculate_damage(ennemy);
-}
-
-bool Unit::find_terrain(const TerrainsType& target_terrain) const {
-  auto it =
-      std::find(allow_terrain.begin(), allow_terrain.end(), target_terrain);
-
-  return it != allow_terrain.end();
-}
-
 int Unit::calculate_damage(const Unit* ennemy) const {
   // Si l'unité est affaiblie, elle fait moins de dégâts
   double percentage_hp_remaining =
@@ -99,6 +85,13 @@ int Unit::calculate_damage(const Unit* ennemy) const {
   return static_cast<int>(raw_damage);
 }
 
+void Unit::attack(Unit* ennemy) {
+  // On attaque l'ennemie
+  ennemy->stats.hp -= calculate_damage(this);
+  // L'ennemie riposte
+  stats.hp -= calculate_damage(ennemy);
+}
+
 void Unit::heal() {
   int max_hp = unitData.at(name).hp;
 
@@ -107,4 +100,11 @@ void Unit::heal() {
 
     stats.hp = std::min<int>(stats.hp + amount_to_heal, max_hp);
   }
+}
+
+bool Unit::find_terrain(const TerrainsType& target_terrain) const {
+  auto it =
+      std::find(allow_terrain.begin(), allow_terrain.end(), target_terrain);
+
+  return it != allow_terrain.end();
 }

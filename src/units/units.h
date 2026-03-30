@@ -66,24 +66,34 @@ class Unit {
  public:
   Unit(UnitName name, Country country, Case* case_unit,
        std::vector<TerrainsType> allow_terrain);
+  virtual ~Unit() = default;
 
+  /** @brief Calcule les dégâts infligés à un ennemi. */
   int calculate_damage(const Unit* ennemy) const;
+
+  /** @brief Attaque une unité ennemie. */
   void attack(Unit* ennemy);
+
+  /** @brief Soigne l'unité de 20% de ses PV maximum. */
+  void heal();
+
+  /** @brief Vérifie si l'unité peut se déplacer sur un type de terrain. */
   bool find_terrain(const TerrainsType& target_terrain) const;
+
   void switch_active() { active = !active; }
   void switch_on_guard() { on_guard = !on_guard; }
-  void heal();
   void set_case_unit(Case* c) { case_unit = c; }
 
   int get_id() const { return id; }
-  std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
-  Stats get_stats() const { return stats; }
-  UnitName get_name() const { return name; }
-  Country get_country() const { return country; }
   int get_speed() const { return stats.speed; }
-  Case* get_case_unit() { return case_unit; }
   bool is_active() const { return active; }
   bool is_on_guard() const { return on_guard; }
+
+  UnitName get_name() const { return name; }
+  Country get_country() const { return country; }
+  Stats get_stats() const { return stats; }
+  Case* get_case_unit() { return case_unit; }
+  std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
 
  protected:
   int id;
