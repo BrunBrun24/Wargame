@@ -1,5 +1,5 @@
 #include "neutral.h"
 
-Neutral::Neutral(UnitName name, Country country, Case* case_unit)
-    : Unit(name, country, case_unit,
+Neutral::Neutral(UnitName name, Player* player, Case* case_unit)
+    : Unit(name, player, case_unit,
            {TerrainsType::Plains, TerrainsType::Snow}) {}

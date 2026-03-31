@@ -4,5 +4,5 @@
 
 class Terrestrial : public Unit {
  public:
-  Terrestrial(UnitName name, Country country, Case* case_unit);
+  Terrestrial(UnitName name, Player* player, Case* case_unit);
 };

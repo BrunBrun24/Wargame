@@ -4,5 +4,5 @@
 
 class Maritime : public Unit {
  public:
-  Maritime(UnitName name, Country country, Case* case_unit);
+  Maritime(UnitName name, Player* player, Case* case_unit);
 };

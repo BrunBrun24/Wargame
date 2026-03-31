@@ -43,7 +43,7 @@ Map::Map(int nb_player) {
     // On ajoute le nouveau pays à la liste d'exclusion pour le prochain tour
     taken_countries.push_back(c);
 
-    _players.push_back(std::make_unique<Player>(c));
+    _players.push_back(new Player(c));
   }
   std::cout << std::endl;
 }
@@ -139,16 +139,14 @@ int Map::distance_between(Coordinate c1, Coordinate c2) {
       case1.distance_between(&case2).distance_traveled.size());
 }
 
-void Map::add_unit_to_case(Case* target_case, UnitName name,
-                           std::unique_ptr<Player>& player) {
-  std::unique_ptr<Unit> new_unit =
-      _create_unit(name, player->get_country(), target_case);
+void Map::add_unit_to_case(Case* target_case, UnitName name, Player* player) {
+  Unit* new_unit = _create_unit(name, player, target_case);
 
   // On ajoute l'unité sur la case
-  target_case->add_unit(new_unit.get());
+  target_case->add_unit(new_unit);
 
   // On associe l'unité au joueur
-  player->add_unit(std::move(new_unit));
+  player->add_unit(new_unit);
 }
 
 void Map::add_building_to_case(Case* target_case, BuildingType type) {
@@ -428,7 +426,7 @@ void Map::_generate_buildings() {
       coordinate_possible;
 
   for (auto const& [id, type] : dict_building) {
-    int building_to_be_placed = 3 * _players.size();
+    size_t building_to_be_placed = 3 * _players.size();
     coordinate_possible = coordinate_possible_copy;
 
     while (building_to_be_placed > 0 && !coordinate_possible.empty()) {
@@ -471,27 +469,26 @@ void Map::_generate_buildings() {
   std::cout << std::endl;
 }
 
-std::unique_ptr<Unit> Map::_create_unit(UnitName name, Country country,
-                                        Case* c) {
+Unit* Map::_create_unit(UnitName name, Player* player, Case* c) {
   // 1. Cas des unités Neutres
   if (name == UnitName::Settler || name == UnitName::Worker) {
-    return std::make_unique<Neutral>(name, country, c);
+    return new Neutral(name, player, c);
   }
 
   // 2. Cas des unités Maritimes
   if (name == UnitName::Galley || name == UnitName::Caravel ||
       name == UnitName::Ironclad || name == UnitName::Destroyer ||
       name == UnitName::Submarine || name == UnitName::AircraftCarrier) {
-    return std::make_unique<Maritime>(name, country, c);
+    return new Maritime(name, player, c);
   }
 
   // 3. Cas des unités Aériennes
   if (name == UnitName::Biplane || name == UnitName::Fighter ||
       name == UnitName::JetFighter || name == UnitName::Bomber ||
       name == UnitName::JetBomber) {
-    return std::make_unique<Aerial>(name, country, c);
+    return new Aerial(name, player, c);
   }
 
   // 4. Par défaut : Unités Terrestres
-  return std::make_unique<Terrestrial>(name, country, c);
+  return new Terrestrial(name, player, c);
 }

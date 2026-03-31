@@ -17,11 +17,11 @@ void Case::add_neighbor(Case* neighbor) {
 void Case::add_unit(Unit* unit) {
   _units.push_back(unit);
 
-  set_country(unit->get_country());
+  set_country(unit->get_player()->get_country());
   unit->set_case_unit(this);
 };
 
-void Case::delete_unit(Unit* unit_to_move) {
+void Case::remove_unit(Unit* unit_to_move) {
   // On cherche l'unité par son ID
   auto it = std::find_if(_units.begin(), _units.end(), [&](Unit* u) {
     return u->get_id() == unit_to_move->get_id();
@@ -58,7 +58,7 @@ bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
 
 void Case::create_city(Case* target_case, Unit* unit) {
   target_case->get_terrain().set_building(BuildingType::City);
-  target_case->delete_unit(unit);
+  target_case->remove_unit(unit);
 }
 
 bool Case::create_mine_is_possible(Case* target_case, Unit* unit) {
@@ -83,8 +83,8 @@ bool Case::create_mine_is_possible(Case* target_case, Unit* unit) {
 }
 
 void Case::create_mine(Case* target_case, Unit* unit) {
-  target_case->set_country(unit->get_country());
-  target_case->delete_unit(unit);
+  target_case->set_country(unit->get_player()->get_country());
+  target_case->remove_unit(unit);
 }
 
 Course Case::movement_is_possible(Case* target_case, const Unit* unit) {
@@ -163,46 +163,70 @@ void Case::movement(Case* target_case, Unit* unit_to_move) {
   Case* backtrack_case =
       course.distance_traveled[course.distance_traveled.size() - 2];
 
-  // Cas 1 : La case est libre ou alliée
+  // Cas 1 : La case est libre ou alliée (le terrain à déjà été vérifié)
   if ((target_case->get_country() == Country::Neutral) ||
-      (target_case->get_country() == unit_to_move->get_country())) {
-    delete_unit(unit_to_move);
+      (target_case->get_country() ==
+       unit_to_move->get_player()->get_country())) {
+    remove_unit(unit_to_move);
     set_country_neutral();
 
     target_case->add_unit(unit_to_move);
     unit_to_move->set_case_unit(target_case);
+    unit_to_move->switch_active();
     return;
   }
 
   // Cas 2 : Un ennemi est présent
   Unit* best_defender = target_case->select_best_unit(unit_to_move);
-  unit_to_move->attack(best_defender);
 
-  // Si le défenseur meurt
-  if (!(best_defender->get_stats().hp > 0)) {
-    target_case->delete_unit(best_defender);
-    target_case->set_country_neutral();
-  }
+  // Si l'ennemie n'est pas une unité militaire, les ennemies sur la case sont
+  // capturés ET l'unité se déplace sur la case cible
+  if (!best_defender->_is_military()) {
+    _capture_and_displace(target_case, unit_to_move);
 
-  // Gestion de l'attaquant après combat
-  if (unit_to_move->get_stats().hp > 0) {
-    delete_unit(unit_to_move);
-    set_country_neutral();
-
-    // Si la case cible est maintenant vide, on avance
-    if (target_case->get_country() == Country::Neutral) {
-      target_case->add_unit(unit_to_move);
-      unit_to_move->set_case_unit(target_case);
-    } else {
-      // Sinon on recule sur la case précédente
-      backtrack_case->add_unit(unit_to_move);
-      unit_to_move->set_case_unit(backtrack_case);
-    }
   } else {
-    // L'attaquant est mort
-    delete_unit(unit_to_move);
-    set_country_neutral();
+    // Sinon un combat a lieu
+    unit_to_move->fight(best_defender);
+
+    // Si le défenseur meurt
+    if (!(best_defender->get_stats().hp > 0)) {
+      target_case->remove_unit(best_defender);
+      target_case->set_country_neutral();
+    }
+
+    // Gestion de l'attaquant après combat
+    if (unit_to_move->get_stats().hp > 0) {
+      remove_unit(unit_to_move);
+      set_country_neutral();
+
+      // Si la case cible est maintenant vide, on avance
+      if (target_case->get_country() == Country::Neutral) {
+        target_case->add_unit(unit_to_move);
+        unit_to_move->set_case_unit(target_case);
+
+      } else {
+        Unit* other_best_defender = target_case->select_best_unit(unit_to_move);
+
+        // Si l'ennemie n'est pas une unité militaire, les ennemies sur la case
+        // sont capturés ET l'unité se déplace sur la case cible
+        if (!other_best_defender->_is_military()) {
+          _capture_and_displace(target_case, unit_to_move);
+
+        } else {
+          // Sinon on recule sur la case précédente
+          backtrack_case->add_unit(unit_to_move);
+          unit_to_move->set_case_unit(backtrack_case);
+        }
+      }
+    } else {
+      // L'attaquant est mort, on retire l'appartenance de l'unité au joueur
+      unit_to_move->get_player()->remove_unit(unit_to_move);
+      remove_unit(unit_to_move);
+      set_country_neutral();
+    }
   }
+
+  unit_to_move->switch_active();
 }
 
 Unit* Case::select_best_unit(Unit* ennemy) const {
@@ -326,7 +350,7 @@ Country Case::get_unit_country() const {
     return Country::Neutral;
   }
 
-  return _units.front()->get_country();
+  return _units.front()->get_player()->get_country();
 }
 
 std::string Case::get_description() {
@@ -426,4 +450,22 @@ std::string Case::get_description() {
     default:
       return "UnknownTerrain";
   }
+}
+
+void Case::_capture_and_displace(Case* target_case, Unit* unit_to_move) {
+  // 1. On change le pays des unités sur la case cible en mettant le pays de
+  // l'unité qui se déplace
+  for (Unit* u : target_case->get_units()) {
+    // On retire l'appartenance de l'unité au joueur
+    u->get_player()->remove_unit(u);
+
+    // On change l'appartenance de l'unité
+    u->set_player(unit_to_move->get_player());
+  }
+
+  // 2. L'unité se déplace sur la case cible
+  remove_unit(unit_to_move);
+  set_country_neutral();
+  target_case->add_unit(unit_to_move);
+  unit_to_move->set_case_unit(target_case);
 }

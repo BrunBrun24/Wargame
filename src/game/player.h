@@ -20,14 +20,14 @@ enum class Country {
   UnitedStates
 };
 
-using vector_units = std::vector<std::unique_ptr<Unit>>;
 using vector_terrains = std::vector<std::unique_ptr<Terrains>>;
 
 class Player {
  public:
   Player(Country country);
 
-  void add_unit(std::unique_ptr<Unit> unit);
+  void add_unit(Unit* unit);
+  void remove_unit(Unit* unit);
   void add_building(std::unique_ptr<Terrains> building);
 
   int get_id() const { return _id; }
@@ -38,6 +38,6 @@ class Player {
 
   int _id;
   Country _country;
-  vector_units _units;
+  std::vector<Unit*> _units;
   vector_terrains _terrains;
 };

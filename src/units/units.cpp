@@ -52,10 +52,10 @@ const StrengthWeaknessMatrix unit_strength_weakness_matrix =
 
 int Unit::_id_counter = 0;
 
-Unit::Unit(UnitName name, Country country, Case* case_unit,
+Unit::Unit(UnitName name, Player* player, Case* case_unit,
            std::vector<TerrainsType> allow_terrain)
     : name(name),
-      country(country),
+      player(player),
       case_unit(case_unit),
       stats(unitData.at(name)),
       allow_terrain(allow_terrain),
@@ -73,7 +73,7 @@ bool Unit::destroy_building_is_possible() {
   // 2. Un bâtiment est sur la case de l'unité ET le bâtiment doit-être
   // différents du pays de l'unité
   if ((case_unit->get_terrain().get_building() == BuildingType::NoBuilding) &&
-      (case_unit->get_country() != country)) {
+      (case_unit->get_country() != player->get_country())) {
     return false;
   }
 
@@ -110,7 +110,7 @@ int Unit::calculate_damage(const Unit* ennemy) const {
   return static_cast<int>(raw_damage);
 }
 
-void Unit::attack(Unit* ennemy) {
+void Unit::fight(Unit* ennemy) {
   // On attaque l'ennemie
   ennemy->stats.hp -= calculate_damage(this);
   // L'ennemie riposte
@@ -132,4 +132,11 @@ bool Unit::find_terrain(const TerrainsType& target_terrain) const {
       std::find(allow_terrain.begin(), allow_terrain.end(), target_terrain);
 
   return it != allow_terrain.end();
+}
+
+bool Unit::_is_military() const {
+  if ((name != UnitName::Settler) && (name != UnitName::Worker)) {
+    return true;
+  }
+  return false;
 }

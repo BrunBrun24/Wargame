@@ -12,7 +12,7 @@ void Game::start_game() {
 }
 
 void Game::turn_by_turn() {
-  const vector_player& players = _map.get_players();
+  std::vector<Player*> players = _map.get_players();
 
   while (players.size() > 1) {
     for (const auto& player : players) {

@@ -64,7 +64,7 @@ extern const StrengthWeaknessMatrix unit_strength_weakness_matrix;
 
 class Unit {
  public:
-  Unit(UnitName name, Country country, Case* case_unit,
+  Unit(UnitName name, Player* player, Case* case_unit,
        std::vector<TerrainsType> allow_terrain);
   virtual ~Unit() = default;
 
@@ -74,8 +74,8 @@ class Unit {
   /** @brief Calcule les dégâts infligés à un ennemi. */
   int calculate_damage(const Unit* ennemy) const;
 
-  /** @brief Attaque une unité ennemie. */
-  void attack(Unit* ennemy);
+  /** @brief Combat entre deux unités. */
+  void fight(Unit* ennemy);
 
   /** @brief Soigne l'unité de 20% de ses PV maximum. */
   void heal();
@@ -85,15 +85,17 @@ class Unit {
 
   void switch_active() { active = !active; }
   void switch_on_guard() { on_guard = !on_guard; }
+  void set_player(Player* p) { player = p; }
   void set_case_unit(Case* c) { case_unit = c; }
 
   int get_id() const { return id; }
   int get_speed() const { return stats.speed; }
   bool is_active() const { return active; }
   bool is_on_guard() const { return on_guard; }
+  bool _is_military() const;
 
   UnitName get_name() const { return name; }
-  Country get_country() const { return country; }
+  Player* get_player() { return player; }
   Stats get_stats() const { return stats; }
   Case* get_case_unit() { return case_unit; }
   std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
@@ -101,7 +103,7 @@ class Unit {
  protected:
   int id;
   UnitName name;
-  Country country;
+  Player* player;
   Stats stats;
   bool active;    // par default à true quand l'unité apparaît
   bool on_guard;  // par default à false quand l'unité apparaît

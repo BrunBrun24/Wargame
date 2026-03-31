@@ -11,7 +11,6 @@ struct Coordinate {
 };
 
 using vector_coordinates = std::vector<Coordinate>;
-using vector_player = std::vector<std::unique_ptr<Player>>;
 
 class Map {
  public:
@@ -26,13 +25,13 @@ class Map {
 
   /** @brief Ajoute une unité sur la case */
   void add_unit_to_case(Case* target_case, UnitName name,
-                        std::unique_ptr<Player>& player);
+                        Player* player);
 
   /** @brief Ajoute un bâtiment sur la case */
   void add_building_to_case(Case* target_case, BuildingType type);
 
   std::vector<std::vector<Case>>& get_cases() { return _cases; }
-  const vector_player& get_players() const { return _players; }
+  std::vector<Player*> get_players() { return _players; }
 
  private:
   /** @brief Établit les liens de voisinage entre les cases (logique hexagonale)
@@ -52,11 +51,11 @@ class Map {
 
   /** @brief Factory pour instancier le bon type d'unité (Aérienne, Terrestre,
    * etc). */
-  std::unique_ptr<Unit> _create_unit(UnitName name, Country country, Case* c);
+  Unit* _create_unit(UnitName name, Player* player, Case* c);
 
   int _size_h;
   int _size_w;
 
   std::vector<std::vector<Case>> _cases;
-  vector_player _players;
+  std::vector<Player*> _players;
 };

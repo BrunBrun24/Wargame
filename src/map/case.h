@@ -20,7 +20,7 @@ class Case {
 
   void add_neighbor(Case* neighbor);
   void add_unit(Unit* unit);
-  void delete_unit(Unit* unit_to_move);
+  void remove_unit(Unit* unit_to_move);
 
   bool create_city_is_possible(Case* target_case, Unit* unit);
   void create_city(Case* target_case, Unit* unit);
@@ -50,10 +50,13 @@ class Case {
   Country get_country() { return _country; };
   Terrains& get_terrain() { return _terrains; };
   const std::vector<Case*> get_neighbors() const { return _neighbors; }
+  std::vector<Unit*> get_units() const { return _units; }
   Country get_unit_country() const;
   std::string get_description();
 
  private:
+  void _capture_and_displace(Case* target_case, Unit* unit_to_move);
+
   Country _country;
   Terrains _terrains;
   std::vector<Case*> _neighbors;  // Cases adjacentes
