@@ -32,6 +32,29 @@ void Case::delete_unit(Unit* unit_to_move) {
   }
 }
 
+bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
+  // 1. On vérifie si l'unité est un colon
+  if (unit->get_name() != UnitName::Settler) {
+    return false;
+  }
+
+  // 2 On vérifie si le colon se trouve sur un terrain neutre ET à plus de 5
+  // cases d'une autre ville
+  if ((unit->get_case_unit()->get_country() != Country::Neutral) &&
+      (calculate_first_building_distance(BuildingType::City)
+               .distance_traveled.size() -
+           1 <
+       5)) {
+    return false;
+  }
+
+  // 3. On vérifie sur la case s'il a un batiment
+  if (target_case->get_terrain().get_building() != BuildingType::NoBuilding) {
+    return false;
+  }
+
+  return true;
+}
 
 void Case::create_city(Case* target_case, Unit* unit) {
   target_case->get_terrain().set_building(BuildingType::City);
