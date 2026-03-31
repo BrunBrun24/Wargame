@@ -61,7 +61,7 @@ void Case::create_city(Case* target_case, Unit* unit) {
   target_case->delete_unit(unit);
 }
 
-bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
+bool Case::create_mine_is_possible(Case* target_case, Unit* unit) {
   // 1. On vérifie si l'unité est un ouvrier
   if (unit->get_name() != UnitName::Worker) {
     return false;
@@ -82,7 +82,7 @@ bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
   return true;
 }
 
-void Case::create_city(Case* target_case, Unit* unit) {
+void Case::create_mine(Case* target_case, Unit* unit) {
   target_case->set_country(unit->get_country());
   target_case->delete_unit(unit);
 }
