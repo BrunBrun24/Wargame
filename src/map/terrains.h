@@ -10,8 +10,8 @@ class Terrains {
   Terrains(TerrainsType type, BuildingType building);
 
   TerrainsType get_terrain_type() const { return _type; }
-  char get_debug_char() const;
   BuildingType get_building() { return _building; }
+  char get_debug_char() const;
 
   void set_terrain(TerrainsType type) { _type = type; }
   void set_building(BuildingType building) { _building = building; }
