@@ -41,7 +41,7 @@ bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
   // 2 On vérifie si le colon se trouve sur un terrain neutre ET à plus de 5
   // cases d'une autre ville
   if ((unit->get_case_unit()->get_country() != Country::Neutral) &&
-      (_calculate_first_building_distance(BuildingType::City)
+      (calculate_first_building_distance(BuildingType::City)
                .distance_traveled.size() -
            1 <
        5)) {
@@ -58,6 +58,32 @@ bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
 
 void Case::create_city(Case* target_case, Unit* unit) {
   target_case->get_terrain().set_building(BuildingType::City);
+  target_case->delete_unit(unit);
+}
+
+bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
+  // 1. On vérifie si l'unité est un ouvrier
+  if (unit->get_name() != UnitName::Worker) {
+    return false;
+  }
+
+  // 2 On vérifie si l"ouvrier se trouve sur un terrain neutre
+  if (unit->get_case_unit()->get_country() != Country::Neutral) {
+    return false;
+  }
+
+  // 3. On vérifie sur la case s'il a un batiment que l'ouvrier peut construire
+  BuildingType building = target_case->get_terrain().get_building();
+  if ((building != BuildingType::GoldMine) &&
+      (building != BuildingType::IronMine) && (building != BuildingType::Oil)) {
+    return false;
+  }
+
+  return true;
+}
+
+void Case::create_city(Case* target_case, Unit* unit) {
+  target_case->set_country(unit->get_country());
   target_case->delete_unit(unit);
 }
 
@@ -241,7 +267,7 @@ Course Case::distance_between(Case* target_case) {
   return {false, {}};
 }
 
-Course Case::_calculate_first_building_distance(BuildingType type) {
+Course Case::calculate_first_building_distance(BuildingType type) {
   // La file contient les cases à visiter
   std::queue<Case*> queue;
   // Permet de savoir si une case a été vue ET de stocker d'où on vient (parent)

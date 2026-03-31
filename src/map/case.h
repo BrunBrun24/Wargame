@@ -25,6 +25,9 @@ class Case {
   bool create_city_is_possible(Case* target_case, Unit* unit);
   void create_city(Case* target_case, Unit* unit);
 
+  bool create_mine_is_possible(Case* target_case, Unit* unit);
+  void create_mine(Case* target_case, Unit* unit);
+
   /** @brief Détermine si l'on peut atteindre la case en partant de l'unité */
   Course movement_is_possible(Case* target_case, const Unit* unit);
 
@@ -38,7 +41,7 @@ class Case {
   Course distance_between(Case* target_case);
 
   /** @return Le chemin le plus court pour trouver le type d'un bâtiment */
-  Course _calculate_first_building_distance(BuildingType type);
+  Course calculate_first_building_distance(BuildingType type);
 
   void set_country(Country country) { _country = country; }
   void set_terrain_type(TerrainsType type) { _terrains.set_terrain(type); }
