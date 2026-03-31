@@ -72,7 +72,7 @@ bool Unit::destroy_building_is_possible() {
 
   // 2. Un bâtiment est sur la case de l'unité ET le bâtiment doit-être
   // différents du pays de l'unité
-  if ((case_unit->get_terrain().get_building() == BuildingType::NoBuilding) &&
+  if ((case_unit->get_building() == BuildingName::None) &&
       (case_unit->get_country() != player->get_country())) {
     return false;
   }
@@ -82,7 +82,7 @@ bool Unit::destroy_building_is_possible() {
 
 void Unit::destroy_building() {
   // On détruit le bâtiment
-  case_unit->get_terrain().set_building(BuildingType::NoBuilding);
+  case_unit->set_building(BuildingName::None);
 
   // L'unité passe son tour
   switch_active();

@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "case.h"
+#include "player.h"
+#include "type.h"
 
 struct Coordinate {
   int x;
@@ -24,11 +26,10 @@ class Map {
   int distance_between(Coordinate c1, Coordinate c2);
 
   /** @brief Ajoute une unité sur la case */
-  void add_unit_to_case(Case* target_case, UnitName name,
-                        Player* player);
+  void add_unit_to_case(Case* target_case, UnitName name, Player* player);
 
   /** @brief Ajoute un bâtiment sur la case */
-  void add_building_to_case(Case* target_case, BuildingType type);
+  void add_building_to_case(Case* target_case, BuildingName building);
 
   std::vector<std::vector<Case>>& get_cases() { return _cases; }
   std::vector<Player*> get_players() { return _players; }
@@ -46,8 +47,14 @@ class Map {
   void _generate_snow();
   void _generate_coasts();
   void _generate_mountains();
-  void _generate_players();
-  void _generate_buildings();
+  /** @return Un vecteur contenant les coordonnées de spawn chaque joueur */
+  std::vector<std::pair<int, int>> _generate_players();
+  void _generate_resources(std::vector<std::pair<int, int>> spawn_points);
+
+  /** @brief Vérifie si une ressource peut apparaître sur un type de terrain
+   * spécifique. */
+  bool _is_resource_compatible(ResourceName resource,
+                               TerrainsType terrain) const;
 
   /** @brief Factory pour instancier le bon type d'unité (Aérienne, Terrestre,
    * etc). */

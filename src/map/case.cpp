@@ -3,10 +3,19 @@
 #include <queue>
 #include <unordered_map>
 
-Case::Case(TerrainsType type) : _terrains(type), _country(Country::Neutral) {}
+#include "units.h"
+
+Case::Case(TerrainsType type)
+    : _terrain(type),
+      _building(BuildingName::None),
+      _resource(ResourceName::None),
+      _country(Country::Neutral) {}
 
 Case::Case(TerrainsType type, Country country)
-    : _terrains(type), _country(country) {}
+    : _terrain(type),
+      _building(BuildingName::None),
+      _resource(ResourceName::None),
+      _country(country) {}
 
 void Case::add_neighbor(Case* neighbor) {
   if (neighbor != nullptr) {
@@ -41,7 +50,7 @@ bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
   // 2 On vérifie si le colon se trouve sur un terrain neutre ET à plus de 5
   // cases d'une autre ville
   if ((unit->get_case_unit()->get_country() != Country::Neutral) &&
-      (calculate_first_building_distance(BuildingType::City)
+      (calculate_first_building_distance(BuildingName::City)
                .distance_traveled.size() -
            1 <
        5)) {
@@ -49,7 +58,7 @@ bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
   }
 
   // 3. On vérifie sur la case s'il a un batiment
-  if (target_case->get_terrain().get_building() != BuildingType::NoBuilding) {
+  if (target_case->get_building() != BuildingName::None) {
     return false;
   }
 
@@ -57,7 +66,7 @@ bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
 }
 
 void Case::create_city(Case* target_case, Unit* unit) {
-  target_case->get_terrain().set_building(BuildingType::City);
+  target_case->set_building(BuildingName::City);
   target_case->remove_unit(unit);
 }
 
@@ -73,9 +82,8 @@ bool Case::create_mine_is_possible(Case* target_case, Unit* unit) {
   }
 
   // 3. On vérifie sur la case s'il a un batiment que l'ouvrier peut construire
-  BuildingType building = target_case->get_terrain().get_building();
-  if ((building != BuildingType::GoldMine) &&
-      (building != BuildingType::IronMine) && (building != BuildingType::Oil)) {
+  BuildingName building = target_case->get_building();
+  if (building == BuildingName::City) {
     return false;
   }
 
@@ -85,6 +93,23 @@ bool Case::create_mine_is_possible(Case* target_case, Unit* unit) {
 void Case::create_mine(Case* target_case, Unit* unit) {
   target_case->set_country(unit->get_player()->get_country());
   target_case->remove_unit(unit);
+}
+
+char Case::get_debug_char() const {
+  switch (_terrain) {
+    case TerrainsType::CoastLake:
+      return 'C';
+    case TerrainsType::Mountains:
+      return 'M';
+    case TerrainsType::Ocean:
+      return 'O';
+    case TerrainsType::Plains:
+      return 'P';
+    case TerrainsType::Snow:
+      return 'S';
+    default:
+      return '?';
+  }
 }
 
 Course Case::movement_is_possible(Case* target_case, const Unit* unit) {
@@ -124,12 +149,12 @@ Course Case::movement_is_possible(Case* target_case, const Unit* unit) {
 
     for (Case* neighbor : current->_neighbors) {
       // Vérification du terrain (Spécifique aux unités)
-      if (!unit->find_terrain(neighbor->_terrains.get_terrain_type())) {
+      if (!unit->find_terrain(neighbor->get_terrain())) {
         continue;
       }
 
       // Vérification s'il y a une unité ennemie sur le terrain
-      if (!unit->find_terrain(neighbor->_terrains.get_terrain_type())) {
+      if (!unit->find_terrain(neighbor->get_terrain())) {
         continue;
       }
 
@@ -291,7 +316,7 @@ Course Case::distance_between(Case* target_case) {
   return {false, {}};
 }
 
-Course Case::calculate_first_building_distance(BuildingType type) {
+Course Case::calculate_first_building_distance(BuildingName building) {
   // La file contient les cases à visiter
   std::queue<Case*> queue;
   // Permet de savoir si une case a été vue ET de stocker d'où on vient (parent)
@@ -308,7 +333,7 @@ Course Case::calculate_first_building_distance(BuildingType type) {
     queue.pop();
 
     // 1. Condition d'arrêt : on a trouvé le bâtiment
-    if (current->get_terrain().get_building() == type) {
+    if (current->get_building() == building) {
       target = current;
       break;
     }
@@ -355,16 +380,13 @@ Country Case::get_unit_country() const {
 
 std::string Case::get_description() {
   // 1. Priorité maximale : La Ville
-  if (_terrains.get_building() == BuildingType::City) {
+  if (get_building() == BuildingName::City) {
     return "City";
   }
 
-  // 2. Si pas de ville : Nom de l'unité (la première sur la case)
+  // 2. Priorité 2 : Les Unités
   if (!_units.empty()) {
     UnitName name = _units[0]->get_name();
-
-    // Conversion de l'enum UnitName en string (basé sur ton dictionnaire
-    // UnitParser)
     switch (name) {
       case UnitName::Warrior:
         return "Warrior";
@@ -423,20 +445,83 @@ std::string Case::get_description() {
     }
   }
 
-  // 3. Si pas d'unité : Nom du bâtiment
-  switch (_terrains.get_building()) {
-    case BuildingType::GoldMine:
-      return "GoldMine";
-    case BuildingType::IronMine:
-      return "IronMine";
-    case BuildingType::Oil:
-      return "Oil";
-    default:
-      break;
+  // 3. Priorité 3 : TOUTES les Ressources Naturelles
+  ResourceName res = get_resource();
+  if (res != ResourceName::None) {
+    switch (res) {
+      // Stratégiques
+      case ResourceName::Horse:
+        return "Res_Horse";
+      case ResourceName::Iron:
+        return "Res_Iron";
+      case ResourceName::Copper:
+        return "Res_Copper";
+      case ResourceName::Coal:
+        return "Res_Coal";
+      case ResourceName::Oil:
+        return "Res_Oil";
+      case ResourceName::Uranium:
+        return "Res_Uranium";
+      case ResourceName::Aluminum:
+        return "Res_Aluminum";
+
+      // Santé
+      case ResourceName::Corn:
+        return "Res_Corn";
+      case ResourceName::Rice:
+        return "Res_Rice";
+      case ResourceName::Wheat:
+        return "Res_Wheat";
+      case ResourceName::Banana:
+        return "Res_Banana";
+      case ResourceName::Deer:
+        return "Res_Deer";
+      case ResourceName::Pig:
+        return "Res_Pig";
+      case ResourceName::Cow:
+        return "Res_Cow";
+      case ResourceName::Sheep:
+        return "Res_Sheep";
+      case ResourceName::Fish:
+        return "Res_Fish";
+      case ResourceName::Clam:
+        return "Res_Clam";
+      case ResourceName::Crab:
+        return "Res_Crab";
+
+      // Luxe
+      case ResourceName::Gold:
+        return "Res_Gold";
+      case ResourceName::Silver:
+        return "Res_Silver";
+      case ResourceName::Gems:
+        return "Res_Gems";
+      case ResourceName::Ivory:
+        return "Res_Ivory";
+      case ResourceName::Fur:
+        return "Res_Fur";
+      case ResourceName::Dye:
+        return "Res_Dye";
+      case ResourceName::Incense:
+        return "Res_Incense";
+      case ResourceName::Silk:
+        return "Res_Silk";
+      case ResourceName::Sugar:
+        return "Res_Sugar";
+      case ResourceName::Spices:
+        return "Res_Spices";
+      case ResourceName::Wine:
+        return "Res_Wine";
+      case ResourceName::Whale:
+        return "Res_Whale";
+
+      default:
+        return "Resource";
+    }
   }
 
   // 4. Par défaut : Le type de terrain
-  switch (_terrains.get_terrain_type()) {
+  switch (get_terrain()) {
     case TerrainsType::Plains:
       return "Plains";
     case TerrainsType::Ocean:

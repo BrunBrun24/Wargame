@@ -1,7 +1,7 @@
 #include "player.h"
 
-#include "units.h"
 #include "algorithm"
+#include "units.h"
 
 int Player::_id_counter = 0;
 
@@ -23,11 +23,5 @@ void Player::remove_unit(Unit* unit) {
 
   if (it != _units.end()) {
     _units.erase(it);
-  }
-}
-
-void Player::add_building(std::unique_ptr<Terrains> building) {
-  if (building) {
-    _terrains.push_back(std::move(building));
   }
 }

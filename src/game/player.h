@@ -1,26 +1,14 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <vector>
 
+#include "type.h"
+
 class Unit;
-class Terrains;
 
-enum class Country {
-  Neutral,
-  France,
-  Germany,
-  UnitedKingdom,
-  Russia,
-  Egypt,
-  Switzerland,
-  Japan,
-  Spain,
-  Italy,
-  UnitedStates
-};
-
-using vector_terrains = std::vector<std::unique_ptr<Terrains>>;
+using ResourceInventory = std::map<ResourceName, int>;
 
 class Player {
  public:
@@ -28,10 +16,13 @@ class Player {
 
   void add_unit(Unit* unit);
   void remove_unit(Unit* unit);
-  void add_building(std::unique_ptr<Terrains> building);
+  void add_building_resource(ResourceName name) {
+    _buildings_resources[name] += 1;
+  };
 
   int get_id() const { return _id; }
   Country get_country() const { return _country; }
+  ResourceInventory get_resources() { return _resources; }
 
  private:
   static int _id_counter;
@@ -39,5 +30,7 @@ class Player {
   int _id;
   Country _country;
   std::vector<Unit*> _units;
-  vector_terrains _terrains;
+  ResourceInventory _resources;  // Nombre de ressources possédant le joueur
+  ResourceInventory
+      _buildings_resources;  // Nombre de bâtiments générant une ressource
 };
