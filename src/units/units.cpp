@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <string>
 
+#include "case.h"
 #include "unit_utils.h"
 
 const std::map<UnitName, Stats> unitData = {
@@ -61,6 +62,30 @@ Unit::Unit(UnitName name, Country country, Case* case_unit,
       active(true),
       on_guard(false) {
   this->id = _id_counter++;
+}
+
+bool Unit::destroy_building_is_possible() {
+  // 1. L'unité est une troupe
+  if ((name == UnitName::Settler) || (name == UnitName::Worker)) {
+    return false;
+  }
+
+  // 2. Un bâtiment est sur la case de l'unité ET le bâtiment doit-être
+  // différents du pays de l'unité
+  if ((case_unit->get_terrain().get_building() == BuildingType::NoBuilding) &&
+      (case_unit->get_country() != country)) {
+    return false;
+  }
+
+  return true;
+}
+
+void Unit::destroy_building() {
+  // On détruit le bâtiment
+  case_unit->get_terrain().set_building(BuildingType::NoBuilding);
+
+  // L'unité passe son tour
+  switch_active();
 }
 
 int Unit::calculate_damage(const Unit* ennemy) const {

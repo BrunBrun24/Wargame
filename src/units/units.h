@@ -68,6 +68,9 @@ class Unit {
        std::vector<TerrainsType> allow_terrain);
   virtual ~Unit() = default;
 
+  bool destroy_building_is_possible();
+  void destroy_building();
+
   /** @brief Calcule les dégâts infligés à un ennemi. */
   int calculate_damage(const Unit* ennemy) const;
 
