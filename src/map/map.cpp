@@ -49,15 +49,29 @@ Map::Map(int nb_player) {
 }
 
 void Map::create_map() {
-  std::srand(static_cast<unsigned int>(std::time(nullptr)));
+  bool success = false;
+  while (!success) {
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
-  _generate_ocean();
-  _generate_plains();
-  _generate_snow();
-  _generate_coasts();
-  _generate_mountains();
-  std::vector<std::pair<int, int>> spawn_points = _generate_players();
-  _generate_resources(spawn_points);
+    // 1. On vide tout avant de (re)commencer
+    _reset_map();
+
+    // 2. On génère le terrain
+    _generate_ocean();  // Remet tout en Ocean + recrée les liens
+    _generate_plains();
+    _generate_snow();
+    _generate_coasts();
+    _generate_mountains();
+
+    // 3. On tente de placer les joueurs
+    // On change la signature de _generate_players pour qu'il renvoie un bool
+    std::vector<std::pair<int, int>> spawn_points;
+    if (_try_place_players(spawn_points)) {
+      _generate_resources(spawn_points);
+      success = true;
+    }
+    // Si success est false, la boucle recommence et _reset_map() nettoie tout
+  }
 }
 
 void Map::render_debug() {
@@ -186,33 +200,43 @@ void Map::add_building_to_case(Case* target_case, BuildingName building) {
 void Map::_link_hex_neighbors(int row, int col) {
   Case* current = &_cases[row][col];
 
-  // Voisins constants (Gauche et Droite)
-  if (col > 0) current->add_neighbor(&_cases[row][col - 1]);
-  if (col < _size_w - 1) current->add_neighbor(&_cases[row][col + 1]);
+  // Voisins constants (Gauche et Droite) avec boucle
+  // À gauche : si col == 0, le voisin est à l'extrémité droite (_size_w - 1)
+  int left_col = (col > 0) ? col - 1 : _size_w - 1;
+  current->add_neighbor(&_cases[row][left_col]);
 
+  // À droite : si col == _size_w - 1, le voisin est à l'extrémité gauche (0)
+  int right_col = (col < _size_w - 1) ? col + 1 : 0;
+  current->add_neighbor(&_cases[row][right_col]);
+
+  // Voisins Verticaux (Haut et Bas)
   if (row % 2 == 0) {
-    // Ligne PAIRE
-    // En haut (Gauche / Droite)
+    // Ligne paire
     if (row > 0) {
       current->add_neighbor(&_cases[row - 1][col]);
-      if (col > 0) current->add_neighbor(&_cases[row - 1][col - 1]);
+      // Diagonale haut-gauche avec boucle
+      int diag_left = (col > 0) ? col - 1 : _size_w - 1;
+      current->add_neighbor(&_cases[row - 1][diag_left]);
     }
-    // En bas (Gauche / Droite)
     if (row < _size_h - 1) {
       current->add_neighbor(&_cases[row + 1][col]);
-      if (col > 0) current->add_neighbor(&_cases[row + 1][col - 1]);
+      // Diagonale bas-gauche avec boucle
+      int diag_left = (col > 0) ? col - 1 : _size_w - 1;
+      current->add_neighbor(&_cases[row + 1][diag_left]);
     }
   } else {
-    // Ligne IMPAIRE
-    // En haut (Gauche / Droite)
+    // Ligne impaire
     if (row > 0) {
       current->add_neighbor(&_cases[row - 1][col]);
-      if (col < _size_w - 1) current->add_neighbor(&_cases[row - 1][col + 1]);
+      // Diagonale haut-droite avec boucle
+      int diag_right = (col < _size_w - 1) ? col + 1 : 0;
+      current->add_neighbor(&_cases[row - 1][diag_right]);
     }
-    // En bas (Gauche / Droite)
     if (row < _size_h - 1) {
       current->add_neighbor(&_cases[row + 1][col]);
-      if (col < _size_w - 1) current->add_neighbor(&_cases[row + 1][col + 1]);
+      // Diagonale bas-droite avec boucle
+      int diag_right = (col < _size_w - 1) ? col + 1 : 0;
+      current->add_neighbor(&_cases[row + 1][diag_right]);
     }
   }
 }
@@ -229,6 +253,24 @@ int Map::_get_hex_distance(int r1, int c1, int r2, int c2) const {
 
   // La distance hexagonale est le maximum des différences absolues des axes
   return std::max({std::abs(x1 - x2), std::abs(y1 - y2), std::abs(z1 - z2)});
+}
+
+void Map::_reset_map() {
+  for (int row = 0; row < _size_h; row++) {
+    for (int col = 0; col < _size_w; col++) {
+      // Supprime les unités proprement s'il y en a
+      for (Unit* u : _cases[row][col].get_units()) {
+        delete u;
+      }
+      // Réinitialise la case
+      _cases[row][col] = Case(TerrainsType::Ocean);
+      _cases[row][col].set_country(Country::Neutral);
+    }
+  }
+  // Vide les listes de pointeurs des joueurs
+  for (auto* p : _players) {
+    p->clear_units();
+  }
 }
 
 void Map::_generate_ocean() {
@@ -253,7 +295,11 @@ void Map::_generate_plains() {
   }
 
   // Propagation (on étend la terre à certains voisins)
-  for (int iteration = 0; iteration < (750 * _players.size()); ++iteration) {
+  int nb_iteration = 750;
+  if (_players.size() - 1 >= 8) nb_iteration += 200;
+
+  for (int iteration = 0; iteration < (nb_iteration * _players.size());
+       ++iteration) {
     if (land_cases.empty()) break;
 
     // On choisit une case de terre existante au hasard
@@ -355,8 +401,7 @@ void Map::_generate_mountains() {
   }
 }
 
-std::vector<std::pair<int, int>> Map::_generate_players() {
-  std::vector<std::pair<int, int>> spawn_points;
+bool Map::_try_place_players(std::vector<std::pair<int, int>>& spawn_points) {
   std::vector<std::pair<int, int>> coordinate_possible;
 
   // On récupère toutes les coordonnées la ou l'on peut placer les joueurs
@@ -408,12 +453,12 @@ std::vector<std::pair<int, int>> Map::_generate_players() {
     }
     // Si le dernier joueur n'a pas été placé on recréer la map
     if (!placed) {
-      create_map();
-      return spawn_points;
-    }
+      std::cout << "ON RECREER LA MAP" << std::endl;
+      return false;
+    };
   }
 
-  return spawn_points;
+  return true;
 }
 
 void Map::_generate_resources(std::vector<std::pair<int, int>> spawn_points) {

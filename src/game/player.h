@@ -16,6 +16,7 @@ class Player {
 
   void add_unit(Unit* unit);
   void remove_unit(Unit* unit);
+  void clear_units() { _units.clear(); }
   void add_building_resource(ResourceName name) {
     _buildings_resources[name] += 1;
   };

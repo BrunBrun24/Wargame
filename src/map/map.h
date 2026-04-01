@@ -42,13 +42,13 @@ class Map {
   /** @brief Calcule la distance entre points sur une grille hexagonale */
   int _get_hex_distance(int r1, int c1, int r2, int c2) const;
 
+  void _reset_map();
   void _generate_ocean();
   void _generate_plains();
   void _generate_snow();
   void _generate_coasts();
   void _generate_mountains();
-  /** @return Un vecteur contenant les coordonnées de spawn chaque joueur */
-  std::vector<std::pair<int, int>> _generate_players();
+  bool _try_place_players(std::vector<std::pair<int, int>>& spawn_points);
   void _generate_resources(std::vector<std::pair<int, int>> spawn_points);
 
   /** @brief Vérifie si une ressource peut apparaître sur un type de terrain
