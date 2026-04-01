@@ -21,6 +21,7 @@ class Case {
   ~Case() = default;
 
   void add_neighbor(Case* neighbor);
+
   void add_unit(Unit* unit);
   void remove_unit(Unit* unit_to_move);
 
@@ -34,7 +35,7 @@ class Case {
   char get_debug_char() const;
 
   /** @brief Détermine si l'on peut atteindre la case en partant de l'unité */
-  Course movement_is_possible(Case* target_case, const Unit* unit);
+  Course movement_is_possible(Case* target_case, Unit* unit);
 
   /** @brief Déplace l'unité sur la case */
   void movement(Case* target_case, Unit* unit_to_move);
@@ -60,7 +61,7 @@ class Case {
   TerrainsType get_terrain() const { return _terrain; }
   BuildingName get_building() const { return _building; }
   ResourceName get_resource() const { return _resource; }
-  const std::vector<Case*> get_neighbors() const { return _neighbors; }
+  std::vector<Case*> get_neighbors() const { return _neighbors; }
   std::vector<Unit*> get_units() const { return _units; }
   Country get_unit_country() const;
   std::string get_description() const;

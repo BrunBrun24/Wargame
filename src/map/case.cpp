@@ -135,7 +135,7 @@ char Case::get_debug_char() const {
   }
 }
 
-Course Case::movement_is_possible(Case* target_case, const Unit* unit) {
+Course Case::movement_is_possible(Case* target_case, Unit* unit) {
   if (this == target_case) {
     return {true, {this}};
   }
@@ -160,6 +160,15 @@ Course Case::movement_is_possible(Case* target_case, const Unit* unit) {
 
     // Si on a trouvé la cible, on s'arrête
     if (current == target_case) {
+      // Si l'unité que l'on veut déplacer n'est pas une troupe et que la case
+      // cible contient une unité ennemie, elle ne peut pas y accéder
+      std::vector<Unit*> target_units = target_case->get_units();
+      if ((!unit->_is_military()) && (!target_units.empty())) {
+        // On vérifie si la première unité trouvée est ennemie
+        if (target_units[0]->get_player() != unit->get_player()) {
+          break;
+        }
+      }
       reached_target = current;
       break;
     }
