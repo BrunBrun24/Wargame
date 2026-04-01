@@ -64,9 +64,21 @@ Unit::Unit(UnitName name, Player* player, Case* case_unit,
   this->id = _id_counter++;
 }
 
+Unit::~Unit() {
+  // 1. On se retire de la case où l'on se trouve
+  if (case_unit != nullptr) {
+    case_unit->remove_unit(this);
+  }
+
+  // 2. On se retire de la liste du joueur
+  if (player != nullptr) {
+    player->remove_unit(this);
+  }
+}
+
 bool Unit::destroy_building_is_possible() {
   // 1. L'unité est une troupe
-  if ((name == UnitName::Settler) || (name == UnitName::Worker)) {
+  if (!_is_military()) {
     return false;
   }
 
@@ -81,10 +93,14 @@ bool Unit::destroy_building_is_possible() {
 }
 
 void Unit::destroy_building() {
-  // On détruit le bâtiment
+  // 1. On détruit le bâtiment
   case_unit->set_building(BuildingName::None);
 
-  // L'unité passe son tour
+  // 2. On dissocie le bâtiment du joueur
+  case_unit->get_player()->remove_building(case_unit);
+  case_unit->set_player(nullptr);
+
+  // 3. L'unité passe son tour
   switch_active();
 }
 

@@ -48,6 +48,13 @@ Map::Map(int nb_player) {
   std::cout << std::endl;
 }
 
+Map::~Map() {
+  for (Player* p : _players) {
+    delete p;
+  }
+  _players.clear();
+}
+
 void Map::create_map() {
   bool success = false;
   while (!success) {
@@ -170,6 +177,7 @@ void Map::delete_player(Player& player) {
   });
 
   if (it != _players.end()) {
+    delete *it;
     _players.erase(it);
   }
 }
@@ -265,6 +273,7 @@ void Map::_reset_map() {
       // Réinitialise la case
       _cases[row][col] = Case(TerrainsType::Ocean);
       _cases[row][col].set_country(Country::Neutral);
+      _cases[row][col].set_player(nullptr);
     }
   }
   // Vide les listes de pointeurs des joueurs

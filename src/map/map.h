@@ -17,6 +17,7 @@ using vector_coordinates = std::vector<Coordinate>;
 class Map {
  public:
   Map(int nb_player);
+  ~Map();
 
   void create_map();
   void render_debug();

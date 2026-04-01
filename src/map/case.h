@@ -5,6 +5,7 @@
 
 #include "type.h"
 
+class Player;
 class Case;
 class Unit;
 
@@ -15,19 +16,20 @@ struct Course {
 
 class Case {
  public:
-  Case() = default;
-  Case(TerrainsType type);
-  Case(TerrainsType type, Country country);
+  Case(TerrainsType type = TerrainsType::Ocean, Player* player = nullptr,
+       Country country = Country::Neutral);
+  ~Case() = default;
 
   void add_neighbor(Case* neighbor);
   void add_unit(Unit* unit);
   void remove_unit(Unit* unit_to_move);
 
   bool create_city_is_possible(Case* target_case, Unit* unit);
-  void create_city(Case* target_case, Unit* unit);
+  /** @brief Transforme un colon en ville et détruit l'unité. */
+  void create_city(Case* target_case, Unit* settler);
 
-  bool create_mine_is_possible(Case* target_case, Unit* unit);
-  void create_mine(Case* target_case, Unit* unit);
+  bool create_building_is_possible(Case* target_case, Unit* unit);
+  void create_building(Case* target_case, Unit* worker, BuildingName building);
 
   char get_debug_char() const;
 
@@ -46,12 +48,14 @@ class Case {
   /** @return Le chemin le plus court pour trouver le type d'un bâtiment */
   Course calculate_first_building_distance(BuildingName building);
 
+  void set_player(Player* player) { _player = player; }
   void set_country(Country country) { _country = country; }
   void set_terrain(TerrainsType type) { _terrain = type; }
   void set_building(BuildingName building) { _building = building; }
   void set_resource(ResourceName res) { _resource = res; }
-  void set_country_neutral();
 
+  int get_id() const { return _id; }
+  Player* get_player() { return _player; };
   Country get_country() { return _country; };
   TerrainsType get_terrain() const { return _terrain; }
   BuildingName get_building() const { return _building; }
@@ -59,12 +63,16 @@ class Case {
   const std::vector<Case*> get_neighbors() const { return _neighbors; }
   std::vector<Unit*> get_units() const { return _units; }
   Country get_unit_country() const;
-  std::string get_description();
+  std::string get_description() const;
 
  private:
   void _capture_and_displace(Case* target_case, Unit* unit_to_move);
 
-  Country _country;
+  static int _id_counter;
+
+  int _id;
+  Player* _player;   // Joueur possédant cette case
+  Country _country;  // Pays des unités sur la case
   TerrainsType _terrain;
   BuildingName _building;
   ResourceName _resource;

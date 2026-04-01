@@ -3,19 +3,19 @@
 #include <queue>
 #include <unordered_map>
 
+#include "player.h"
 #include "units.h"
 
-Case::Case(TerrainsType type)
-    : _terrain(type),
-      _building(BuildingName::None),
-      _resource(ResourceName::None),
-      _country(Country::Neutral) {}
+int Case::_id_counter = 0;
 
-Case::Case(TerrainsType type, Country country)
-    : _terrain(type),
+Case::Case(TerrainsType type, Player* player, Country country)
+    : _player(player),
+      _country(country),
+      _terrain(type),
       _building(BuildingName::None),
-      _resource(ResourceName::None),
-      _country(country) {}
+      _resource(ResourceName::None) {
+  this->_id = _id_counter++;
+}
 
 void Case::add_neighbor(Case* neighbor) {
   if (neighbor != nullptr) {
@@ -31,13 +31,19 @@ void Case::add_unit(Unit* unit) {
 };
 
 void Case::remove_unit(Unit* unit_to_move) {
-  // On cherche l'unité par son ID
+  // 1. On cherche et on retire l'unité par son ID
   auto it = std::find_if(_units.begin(), _units.end(), [&](Unit* u) {
     return u->get_id() == unit_to_move->get_id();
   });
 
   if (it != _units.end()) {
     _units.erase(it);
+  }
+
+  // 2. On vérifie si la case doit redevenir neutre
+  // On vérifie s'il y a toujours des unités sur la case
+  if (_units.empty()) {
+    _country = Country::Neutral;
   }
 }
 
@@ -65,12 +71,21 @@ bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
   return true;
 }
 
-void Case::create_city(Case* target_case, Unit* unit) {
+void Case::create_city(Case* target_case, Unit* settler) {
+  // 1. On transforme la case
   target_case->set_building(BuildingName::City);
-  target_case->remove_unit(unit);
+
+  // 2. On lie la ville au joueur
+  target_case->set_player(settler->get_player());
+  target_case->get_player()->add_building(target_case);
+
+  // 3. On détruit le colon
+  // Le delete appelle le destructeur ~Unit() qui s'occupe de
+  // nettoyer les listes dans Case et Player.
+  delete settler;
 }
 
-bool Case::create_mine_is_possible(Case* target_case, Unit* unit) {
+bool Case::create_building_is_possible(Case* target_case, Unit* unit) {
   // 1. On vérifie si l'unité est un ouvrier
   if (unit->get_name() != UnitName::Worker) {
     return false;
@@ -90,9 +105,17 @@ bool Case::create_mine_is_possible(Case* target_case, Unit* unit) {
   return true;
 }
 
-void Case::create_mine(Case* target_case, Unit* unit) {
-  target_case->set_country(unit->get_player()->get_country());
-  target_case->remove_unit(unit);
+void Case::create_building(Case* target_case, Unit* worker,
+                           BuildingName building) {
+  // 1. On transforme la case
+  target_case->set_building(building);
+
+  // 2. On lie la ville au joueur
+  target_case->set_player(worker->get_player());
+  target_case->get_player()->add_building(target_case);
+
+  // 3. L'ouvrier passe son tour
+  worker->switch_active();
 }
 
 char Case::get_debug_char() const {
@@ -193,10 +216,8 @@ void Case::movement(Case* target_case, Unit* unit_to_move) {
       (target_case->get_country() ==
        unit_to_move->get_player()->get_country())) {
     remove_unit(unit_to_move);
-    set_country_neutral();
 
     target_case->add_unit(unit_to_move);
-    unit_to_move->set_case_unit(target_case);
     unit_to_move->switch_active();
     return;
   }
@@ -215,19 +236,16 @@ void Case::movement(Case* target_case, Unit* unit_to_move) {
 
     // Si le défenseur meurt
     if (!(best_defender->get_stats().hp > 0)) {
-      target_case->remove_unit(best_defender);
-      target_case->set_country_neutral();
+      delete best_defender;
     }
 
     // Gestion de l'attaquant après combat
     if (unit_to_move->get_stats().hp > 0) {
       remove_unit(unit_to_move);
-      set_country_neutral();
 
       // Si la case cible est maintenant vide, on avance
       if (target_case->get_country() == Country::Neutral) {
         target_case->add_unit(unit_to_move);
-        unit_to_move->set_case_unit(target_case);
 
       } else {
         Unit* other_best_defender = target_case->select_best_unit(unit_to_move);
@@ -240,18 +258,16 @@ void Case::movement(Case* target_case, Unit* unit_to_move) {
         } else {
           // Sinon on recule sur la case précédente
           backtrack_case->add_unit(unit_to_move);
-          unit_to_move->set_case_unit(backtrack_case);
         }
       }
+
+      unit_to_move->switch_active();
+
     } else {
       // L'attaquant est mort, on retire l'appartenance de l'unité au joueur
-      unit_to_move->get_player()->remove_unit(unit_to_move);
-      remove_unit(unit_to_move);
-      set_country_neutral();
+      delete unit_to_move;
     }
   }
-
-  unit_to_move->switch_active();
 }
 
 Unit* Case::select_best_unit(Unit* ennemy) const {
@@ -364,12 +380,6 @@ Course Case::calculate_first_building_distance(BuildingName building) {
   return {true, path};
 }
 
-void Case::set_country_neutral() {
-  if (_units.size() == 0) {
-    _country = Country::Neutral;
-  }
-}
-
 Country Case::get_unit_country() const {
   if (_units.empty()) {
     return Country::Neutral;
@@ -378,7 +388,7 @@ Country Case::get_unit_country() const {
   return _units.front()->get_player()->get_country();
 }
 
-std::string Case::get_description() {
+std::string Case::get_description() const {
   // 1. Priorité maximale : La Ville
   if (get_building() == BuildingName::City) {
     return "City";
@@ -546,11 +556,12 @@ void Case::_capture_and_displace(Case* target_case, Unit* unit_to_move) {
 
     // On change l'appartenance de l'unité
     u->set_player(unit_to_move->get_player());
+
+    // On associe les unités aux nouveaux joueurs
+    unit_to_move->get_player()->add_unit(u);
   }
 
   // 2. L'unité se déplace sur la case cible
   remove_unit(unit_to_move);
-  set_country_neutral();
   target_case->add_unit(unit_to_move);
-  unit_to_move->set_case_unit(target_case);
 }

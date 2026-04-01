@@ -25,7 +25,7 @@ class Unit {
  public:
   Unit(UnitName name, Player* player, Case* case_unit,
        std::vector<TerrainsType> allow_terrain);
-  virtual ~Unit() = default;
+  virtual ~Unit();
 
   bool destroy_building_is_possible();
   void destroy_building();
