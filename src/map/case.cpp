@@ -1,146 +1,32 @@
 #include "case.h"
 
+#include <algorithm>
 #include <queue>
 #include <unordered_map>
 
+#include "building_database.h"
+#include "city.h"
 #include "player.h"
+#include "resource_database.h"
 #include "units.h"
 
 int Case::_id_counter = 0;
 
 Case::Case(TerrainsType type, Player* player, Country country)
-    : _player(player),
+    : _id(_id_counter++),
       _country(country),
       _terrain(type),
+      _resource(ResourceName::None),
       _building(BuildingName::None),
-      _resource(ResourceName::None) {
-  this->_id = _id_counter++;
-}
+      _player(player),
+      _city(nullptr) {}
 
-void Case::add_neighbor(Case* neighbor) {
-  if (neighbor != nullptr) {
-    _neighbors.push_back(neighbor);
-  }
-}
-
-void Case::add_unit(Unit* unit) {
-  _units.push_back(unit);
-
-  set_country(unit->get_player()->get_country());
-  unit->set_case_unit(this);
-};
-
-void Case::remove_unit(Unit* unit_to_move) {
-  // 1. On cherche et on retire l'unité par son ID
-  auto it = std::find_if(_units.begin(), _units.end(), [&](Unit* u) {
-    return u->get_id() == unit_to_move->get_id();
-  });
-
-  if (it != _units.end()) {
-    _units.erase(it);
-  }
-
-  // 2. On vérifie si la case doit redevenir neutre
-  // On vérifie s'il y a toujours des unités sur la case
-  if (_units.empty()) {
-    _country = Country::Neutral;
-  }
-}
-
-bool Case::create_city_is_possible(Case* target_case, Unit* unit) {
-  // 1. On vérifie si l'unité est un colon
-  if (unit->get_name() != UnitName::Settler) {
-    return false;
-  }
-
-  // 2 On vérifie si le colon se trouve sur un terrain neutre ET à plus de 5
-  // cases d'une autre ville
-  if ((unit->get_case_unit()->get_country() != Country::Neutral) &&
-      (calculate_first_building_distance(BuildingName::City)
-               .distance_traveled.size() -
-           1 <
-       5)) {
-    return false;
-  }
-
-  // 3. On vérifie sur la case s'il a un batiment
-  if (target_case->get_building() != BuildingName::None) {
-    return false;
-  }
-
-  return true;
-}
-
-void Case::create_city(Case* target_case, Unit* settler) {
-  // 1. On transforme la case
-  target_case->set_building(BuildingName::City);
-
-  // 2. On lie la ville au joueur
-  target_case->set_player(settler->get_player());
-  target_case->get_player()->add_building(target_case);
-
-  // 3. On détruit le colon
-  // Le delete appelle le destructeur ~Unit() qui s'occupe de
-  // nettoyer les listes dans Case et Player.
-  delete settler;
-}
-
-bool Case::create_building_is_possible(Case* target_case, Unit* unit) {
-  // 1. On vérifie si l'unité est un ouvrier
-  if (unit->get_name() != UnitName::Worker) {
-    return false;
-  }
-
-  // 2 On vérifie si l"ouvrier se trouve sur un terrain neutre
-  if (unit->get_case_unit()->get_country() != Country::Neutral) {
-    return false;
-  }
-
-  // 3. On vérifie sur la case s'il a un batiment que l'ouvrier peut construire
-  BuildingName building = target_case->get_building();
-  if (building == BuildingName::City) {
-    return false;
-  }
-
-  return true;
-}
-
-void Case::create_building(Case* target_case, Unit* worker,
-                           BuildingName building) {
-  // 1. On transforme la case
-  target_case->set_building(building);
-
-  // 2. On lie la ville au joueur
-  target_case->set_player(worker->get_player());
-  target_case->get_player()->add_building(target_case);
-
-  // 3. L'ouvrier passe son tour
-  worker->switch_active();
-}
-
-char Case::get_debug_char() const {
-  switch (_terrain) {
-    case TerrainsType::CoastLake:
-      return 'C';
-    case TerrainsType::Mountains:
-      return 'M';
-    case TerrainsType::Ocean:
-      return 'O';
-    case TerrainsType::Plains:
-      return 'P';
-    case TerrainsType::Snow:
-      return 'S';
-    default:
-      return '?';
-  }
-}
-
-Course Case::movement_is_possible(Case* target_case, Unit* unit) {
+Course Case::movement_is_possible(const Case* target_case, const Unit* unit) {
   if (this == target_case) {
     return {true, {this}};
   }
 
-  int max_speed = unit->get_speed();
+  int max_speed = unit->get_movement();
 
   // File de paires : la case à explorer et la distance actuelle depuis le
   // départ
@@ -163,7 +49,7 @@ Course Case::movement_is_possible(Case* target_case, Unit* unit) {
       // Si l'unité que l'on veut déplacer n'est pas une troupe et que la case
       // cible contient une unité ennemie, elle ne peut pas y accéder
       std::vector<Unit*> target_units = target_case->get_units();
-      if ((!unit->_is_military()) && (!target_units.empty())) {
+      if ((!unit->is_military()) && (!target_units.empty())) {
         // On vérifie si la première unité trouvée est ennemie
         if (target_units[0]->get_player() != unit->get_player()) {
           break;
@@ -236,7 +122,7 @@ void Case::movement(Case* target_case, Unit* unit_to_move) {
 
   // Si l'ennemie n'est pas une unité militaire, les ennemies sur la case sont
   // capturés ET l'unité se déplace sur la case cible
-  if (!best_defender->_is_military()) {
+  if (!best_defender->is_military()) {
     _capture_and_displace(target_case, unit_to_move);
 
   } else {
@@ -261,7 +147,7 @@ void Case::movement(Case* target_case, Unit* unit_to_move) {
 
         // Si l'ennemie n'est pas une unité militaire, les ennemies sur la case
         // sont capturés ET l'unité se déplace sur la case cible
-        if (!other_best_defender->_is_military()) {
+        if (!other_best_defender->is_military()) {
           _capture_and_displace(target_case, unit_to_move);
 
         } else {
@@ -279,7 +165,7 @@ void Case::movement(Case* target_case, Unit* unit_to_move) {
   }
 }
 
-Unit* Case::select_best_unit(Unit* ennemy) const {
+Unit* Case::select_best_unit(const Unit* ennemy) const {
   Unit* best_unit = nullptr;
   int damage = 0;
 
@@ -294,7 +180,7 @@ Unit* Case::select_best_unit(Unit* ennemy) const {
   return best_unit;
 }
 
-Course Case::distance_between(Case* target_case) {
+Course Case::distance_between(const Case* target_case) {
   if (this == target_case) {
     return {true, {this}};
   }
@@ -341,7 +227,7 @@ Course Case::distance_between(Case* target_case) {
   return {false, {}};
 }
 
-Course Case::calculate_first_building_distance(BuildingName building) {
+Course Case::calculate_first_building_distance(const BuildingName building) {
   // La file contient les cases à visiter
   std::queue<Case*> queue;
   // Permet de savoir si une case a été vue ET de stocker d'où on vient (parent)
@@ -389,6 +275,181 @@ Course Case::calculate_first_building_distance(BuildingName building) {
   return {true, path};
 }
 
+Course Case::calculate_first_city_distance() {
+  // La file contient les cases à visiter
+  std::queue<Case*> queue;
+  // Permet de savoir si une case a été vue ET de stocker d'où on vient (parent)
+  // pour reconstruire le chemin à la fin.
+  std::unordered_map<Case*, Case*> parent_map;
+
+  queue.push(this);
+  parent_map[this] = nullptr;  // La case de départ n'a pas de parent
+
+  Case* target = nullptr;
+
+  while (!queue.empty()) {
+    Case* current = queue.front();
+    queue.pop();
+
+    // 1. Condition d'arrêt : on a trouvé une ville
+    if (current->get_city() != nullptr) {
+      target = current;
+      break;
+    }
+
+    // 2. Exploration des voisins
+    for (Case* neighbor : current->_neighbors) {
+      // Si le voisin n'a pas encore été visité
+      if (parent_map.find(neighbor) == parent_map.end()) {
+        parent_map[neighbor] = current;
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  // 3. Si on n'a rien trouvé
+  if (target == nullptr) {
+    return {false, {}};
+  }
+
+  // 4. Reconstruction du chemin en remontant les parents
+  std::vector<Case*> path;
+  Case* backtrack = target;
+  while (backtrack != nullptr) {
+    path.insert(path.begin(), backtrack);
+    backtrack = parent_map[backtrack];
+  }
+
+  return {true, path};
+}
+
+Yields Case::get_total_yields() const {
+  // 1. Rendement de la case + Rendement du centre-ville (Minimum 2 Food, 1
+  // Prod, 1 Commerce)
+  Yields total = get_base_yields();
+  total.food += 2;
+  total.production += 1;
+  total.commerce += 1;
+
+  // 2. Bonus des ressources
+  if (_resource != ResourceName::None) {
+    const ResourceBonus& bonus = ResourceDatabase::get_info(_resource);
+    total.food += bonus.food;
+    total.production += bonus.production;
+    total.commerce += bonus.commerce;
+  }
+
+  // 3. Bonus des Bâtiments
+  auto bonus = BuildingDatabase::get_info(_building);
+  total.food += bonus.food;
+  total.production += bonus.production;
+  total.commerce += bonus.commerce;
+
+  return total;
+}
+
+void Case::add_unit(Unit* unit) {
+  _units.push_back(unit);
+
+  set_country(unit->get_player()->get_country());
+  unit->set_unit_case(this);
+};
+
+void Case::remove_unit(Unit* unit_to_move) {
+  // 1. On cherche et on retire l'unité par son ID
+  auto it = std::find_if(_units.begin(), _units.end(), [&](Unit* u) {
+    return u->get_id() == unit_to_move->get_id();
+  });
+
+  if (it != _units.end()) {
+    _units.erase(it);
+  }
+
+  // 2. On vérifie si la case doit redevenir neutre
+  // On vérifie s'il y a toujours des unités sur la case
+  if (_units.empty()) {
+    _country = Country::Neutral;
+  }
+}
+
+void Case::add_neighbor(Case* neighbor) {
+  if (neighbor != nullptr) {
+    _neighbors.push_back(neighbor);
+  }
+}
+
+bool Case::create_city_is_possible(const Case* target_case, const Unit* unit) {
+  // 1. On vérifie si l'unité est un colon
+  if (unit->get_name() != UnitName::Settler) {
+    return false;
+  }
+
+  // 2 On vérifie si le joueur est sur son territoire ou sur un territoire
+  // neutre ET à plus de 2 cases d'une autre ville
+  if ((unit->get_case_unit()->get_player() != target_case->get_player()) &&
+      (calculate_first_city_distance().distance_traveled.size() - 1 < 2)) {
+    return false;
+  }
+
+  return true;
+}
+
+void Case::create_city(Case* target_case, Unit* settler) {
+  // 1. S'il y a un bâtiment on le détruit
+  target_case->set_building(BuildingName::None);
+
+  // 2. On créer la ville
+  City* city = new City(target_case, settler->get_player());
+
+  // 3. On lie la ville au joueur
+  target_case->set_player(settler->get_player());
+  target_case->get_player()->add_city(city);
+
+  // 4. On détruit le colon
+  // Le delete appelle le destructeur ~Unit() qui s'occupe de
+  // nettoyer les listes dans Case et Player.
+  delete settler;
+}
+
+bool Case::create_building_is_possible(const Case* target_case,
+                                       const Unit* unit) {
+  // 1. On vérifie si l'unité est un ouvrier
+  if (unit->get_name() != UnitName::Worker) {
+    return false;
+  }
+
+  // 2. Renvoyez la liste de constructions selon le type de ressoucre sur la
+  // case
+
+  return true;
+}
+
+void Case::create_building(Case* target_case, Unit* worker,
+                           const BuildingName building) {
+  // 1. On transforme la case
+  target_case->set_building(building);
+
+  // 2. On lie la ville au joueur
+  target_case->set_player(worker->get_player());
+  target_case->get_player()->add_building(target_case);
+
+  // 3. L'ouvrier passe son tour
+  worker->switch_active();
+}
+
+Yields Case::get_base_yields() const {
+  switch (_terrain) {
+    case TerrainsType::Plains:
+      return {1, 1, 0, 0};
+    case TerrainsType::CoastLake:
+      return {1, 0, 2, 0};
+    case TerrainsType::Ocean:
+      return {1, 0, 1, 0};
+    default:
+      return {0, 0, 0, 0};
+  }
+}
+
 Country Case::get_unit_country() const {
   if (_units.empty()) {
     return Country::Neutral;
@@ -399,69 +460,22 @@ Country Case::get_unit_country() const {
 
 std::string Case::get_description() const {
   // 1. Priorité maximale : La Ville
-  if (get_building() == BuildingName::City) {
+  if (get_city() != nullptr) {
     return "City";
   }
 
   // 2. Priorité 2 : Les Unités
   if (!_units.empty()) {
     UnitName name = _units[0]->get_name();
-    switch (name) {
-      case UnitName::Warrior:
-        return "Warrior";
-      case UnitName::Settler:
-        return "Settler";
-      case UnitName::Tank:
-        return "Tank";
-      case UnitName::Swordsman:
-        return "Swordsman";
-      case UnitName::Archer:
-        return "Archer";
-      case UnitName::Infantry:
-        return "Infantry";
-      case UnitName::Worker:
-        return "Worker";
-      case UnitName::MechanizedInfantry:
-        return "MechanizedInfantry";
-      case UnitName::Crossbowman:
-        return "Crossbowman";
-      case UnitName::FieldCannon:
-        return "FieldCannon";
-      case UnitName::MachineGun:
-        return "MachineGun";
-      case UnitName::Horseman:
-        return "Horseman";
-      case UnitName::Knight:
-        return "Knight";
-      case UnitName::Cuirassier:
-        return "Cuirassier";
-      case UnitName::ModernArmor:
-        return "ModernArmor";
-      case UnitName::Galley:
-        return "Galley";
-      case UnitName::Caravel:
-        return "Caravel";
-      case UnitName::Ironclad:
-        return "Ironclad";
-      case UnitName::Destroyer:
-        return "Destroyer";
-      case UnitName::Submarine:
-        return "Submarine";
-      case UnitName::AircraftCarrier:
-        return "AircraftCarrier";
-      case UnitName::Biplane:
-        return "Biplane";
-      case UnitName::Fighter:
-        return "Fighter";
-      case UnitName::JetFighter:
-        return "JetFighter";
-      case UnitName::Bomber:
-        return "Bomber";
-      case UnitName::JetBomber:
-        return "JetBomber";
-      default:
-        return "UnknownUnit";
+
+    for (const auto& [str, enum_val] : UNIT_STRING_NAME) {
+      if (enum_val == name) {
+        return str;
+      }
     }
+
+    std::string error_msg = "L'unité n'existe pas";
+    throw std::runtime_error(error_msg);
   }
 
   // 3. Priorité 3 : TOUTES les Ressources Naturelles
@@ -509,8 +523,6 @@ std::string Case::get_description() const {
         return "Res_Crab";
 
       // Luxe
-      case ResourceName::Gold:
-        return "Res_Gold";
       case ResourceName::Silver:
         return "Res_Silver";
       case ResourceName::Gems:
@@ -553,6 +565,23 @@ std::string Case::get_description() const {
       return "CoastLake";
     default:
       return "UnknownTerrain";
+  }
+}
+
+char Case::get_debug_char() const {
+  switch (_terrain) {
+    case TerrainsType::CoastLake:
+      return 'C';
+    case TerrainsType::Mountains:
+      return 'M';
+    case TerrainsType::Ocean:
+      return 'O';
+    case TerrainsType::Plains:
+      return 'P';
+    case TerrainsType::Snow:
+      return 'S';
+    default:
+      return '?';
   }
 }
 

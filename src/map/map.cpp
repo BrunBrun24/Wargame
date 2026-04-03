@@ -4,11 +4,10 @@
 #include <cstdlib>
 #include <ctime>
 #include <random>
+#include <unordered_set>
 
 #include "aerial.h"
 #include "maritime.h"
-#include "neutral.h"
-#include "player_utils.h"
 #include "terrestrial.h"
 
 Map::Map(int nb_player) {
@@ -38,7 +37,7 @@ Map::Map(int nb_player) {
     std::cout << "\nJoueur " << i + 1;
 
     // On passe la liste des pays déjà pris
-    Country c = PlayerParser::choice_country(taken_countries);
+    Country c = Player::choice_country(taken_countries);
 
     // On ajoute le nouveau pays à la liste d'exclusion pour le prochain tour
     taken_countries.push_back(c);
@@ -53,6 +52,31 @@ Map::~Map() {
     delete p;
   }
   _players.clear();
+}
+
+int Map::distance_between(const Coordinate c1, const Coordinate c2) const {
+  Case* case1 = const_cast<Case*>(&_cases[c1.x][c1.y]);
+  Case* case2 = const_cast<Case*>(&_cases[c2.x][c2.y]);
+
+  return static_cast<int>(
+      case1->distance_between(case2).distance_traveled.size());
+}
+
+void Map::add_unit_to_case(Case* target_case, const UnitName name,
+                           Player* player) const {
+  Unit* new_unit = _create_unit(name, player, target_case);
+
+  // On ajoute l'unité sur la case
+  target_case->add_unit(new_unit);
+
+  // On associe l'unité au joueur
+  player->add_unit(new_unit);
+}
+
+void Map::add_building_to_case(Case* target_case,
+                               const BuildingName building) const {
+  // On ajoute le batiment sur le terrain
+  target_case->set_building(building);
 }
 
 void Map::create_map() {
@@ -81,7 +105,7 @@ void Map::create_map() {
   }
 }
 
-void Map::render_debug() {
+void Map::render_debug() const {
   // Définition d'un dictionnaire de couleurs pour les ressources (RGB)
   static const std::map<std::string, std::string> res_colors = {
       {"Res_Iron", "\033[38;2;160;82;45m"},        // Marron Terreux
@@ -106,7 +130,7 @@ void Map::render_debug() {
     if (row % 2 != 0) std::cout << "  ";
 
     for (int col = 0; col < _size_w; col++) {
-      Case& current_case = _cases[row][col];
+      const Case current_case = _cases[row][col];
       std::string element = current_case.get_description();
 
       char symbol = '?';
@@ -170,10 +194,10 @@ void Map::render_debug() {
   std::cout << std::endl;
 }
 
-void Map::delete_player(Player& player) {
+void Map::delete_player(Player* player) {
   // On cherche le joueur par son ID
   auto it = std::find_if(_players.begin(), _players.end(), [&](const auto& p) {
-    return p->get_id() == player.get_id();
+    return p->get_id() == player->get_id();
   });
 
   if (it != _players.end()) {
@@ -182,30 +206,7 @@ void Map::delete_player(Player& player) {
   }
 }
 
-int Map::distance_between(Coordinate c1, Coordinate c2) {
-  Case& case1 = _cases[c1.x][c1.y];
-  Case& case2 = _cases[c2.x][c2.y];
-
-  return static_cast<int>(
-      case1.distance_between(&case2).distance_traveled.size());
-}
-
-void Map::add_unit_to_case(Case* target_case, UnitName name, Player* player) {
-  Unit* new_unit = _create_unit(name, player, target_case);
-
-  // On ajoute l'unité sur la case
-  target_case->add_unit(new_unit);
-
-  // On associe l'unité au joueur
-  player->add_unit(new_unit);
-}
-
-void Map::add_building_to_case(Case* target_case, BuildingName building) {
-  // On ajoute le batiment sur le terrain
-  target_case->set_building(building);
-}
-
-void Map::_link_hex_neighbors(int row, int col) {
+void Map::_link_hex_neighbors(const int row, const int col) {
   Case* current = &_cases[row][col];
 
   // Voisins constants (Gauche et Droite) avec boucle
@@ -249,7 +250,8 @@ void Map::_link_hex_neighbors(int row, int col) {
   }
 }
 
-int Map::_get_hex_distance(int r1, int c1, int r2, int c2) const {
+int Map::_get_hex_distance(const int r1, const int c1, const int r2,
+                           const int c2) const {
   // Conversion Row/Col (offset) vers Cube (x, y, z)
   int x1 = c1 - (r1 + (r1 & 1)) / 2;
   int z1 = r1;
@@ -261,6 +263,60 @@ int Map::_get_hex_distance(int r1, int c1, int r2, int c2) const {
 
   // La distance hexagonale est le maximum des différences absolues des axes
   return std::max({std::abs(x1 - x2), std::abs(y1 - y2), std::abs(z1 - z2)});
+}
+
+bool Map::_is_resource_compatible(const ResourceName resource,
+                                  const TerrainsType terrain) const {
+  switch (resource) {
+    case ResourceName::Fish:
+    case ResourceName::Whale:
+    case ResourceName::Crab:
+    case ResourceName::Clam:
+      return (terrain == TerrainsType::CoastLake);
+
+    case ResourceName::Fur:
+    case ResourceName::Deer:
+      return (terrain == TerrainsType::Snow || terrain == TerrainsType::Plains);
+
+    case ResourceName::Iron:
+    case ResourceName::Copper:
+    case ResourceName::Coal:
+    case ResourceName::Silver:
+      return (terrain == TerrainsType::Plains);
+
+    case ResourceName::Oil:
+      return (terrain == TerrainsType::Plains ||
+              terrain == TerrainsType::Snow ||
+              terrain == TerrainsType::CoastLake);
+
+    default:
+      return (terrain == TerrainsType::Plains);
+  }
+}
+
+Unit* Map::_create_unit(const UnitName name, Player* player, Case* c) const {
+  auto it = UNIT_TYPE.find(name);
+
+  if (it != UNIT_TYPE.end()) {
+    UnitType type = it->second;
+
+    switch (type) {
+      case UnitType::Air:
+      case UnitType::Missile:
+        return new Aerial(name, player, c);
+        break;
+
+      case UnitType::Naval:
+        return new Maritime(name, player, c);
+        break;
+
+      default:
+        return new Terrestrial(name, player, c);
+        break;
+    }
+  }
+
+  throw std::runtime_error("Le nom de l'unité n'existe pas dans UNIT_TYPE !");
 }
 
 void Map::_reset_map() {
@@ -282,6 +338,26 @@ void Map::_reset_map() {
   }
 }
 
+void Map::_generate_snow() {
+  // Mettre la neige sur les 3 premières lignes du haut
+  for (int row = 0; row < 3; row++) {
+    for (int col = 0; col < _size_w; col++) {
+      if (_cases[row][col].get_terrain() == TerrainsType::Plains) {
+        _cases[row][col].set_terrain(TerrainsType::Snow);
+      }
+    }
+  }
+
+  // Mettre la neige sur les 3 premières lignes du bas
+  for (int row = _size_h - 3; row < _size_h; row++) {
+    for (int col = 0; col < _size_w; col++) {
+      if (_cases[row][col].get_terrain() == TerrainsType::Plains) {
+        _cases[row][col].set_terrain(TerrainsType::Snow);
+      }
+    }
+  }
+}
+
 void Map::_generate_ocean() {
   for (int row = 0; row < _size_h; row++) {
     for (int col = 0; col < _size_w; col++) {
@@ -292,8 +368,31 @@ void Map::_generate_ocean() {
 }
 
 void Map::_generate_plains() {
-  // Placer des graines de terre (ex: 5 graines)
-  int num_seeds = 10;
+  // Placer des graines de terre
+  int num_seeds = 4;
+  int nb_player = _players.size();
+  if (nb_player <= 2) {
+    num_seeds = 6;
+  } else if (nb_player <= 4) {
+    num_seeds = 3;
+  } else if (nb_player <= 6) {
+    num_seeds = 3;
+  } else if (nb_player < 8) {
+    num_seeds = 4;
+  }
+
+  // chance de transformer le voisin en terre s'il est encore de l'eau
+  int luck = 37;
+  if (nb_player <= 2) {
+    luck = 50;
+  } else if (nb_player <= 4) {
+    luck = 50;
+  } else if (nb_player <= 6) {
+    luck = 50;
+  } else if (nb_player < 8) {
+    luck = 50;
+  }
+
   std::vector<Case*> land_cases;
 
   for (int i = 0; i < num_seeds; ++i) {
@@ -304,10 +403,10 @@ void Map::_generate_plains() {
   }
 
   // Propagation (on étend la terre à certains voisins)
-  int nb_iteration = 750;
-  if (_players.size() - 1 >= 8) nb_iteration += 200;
+  int nb_iteration = 825;
+  if (_players.size() - 1 >= 8) nb_iteration += 125;
 
-  for (int iteration = 0; iteration < (nb_iteration * _players.size());
+  for (size_t iteration = 0; iteration < (nb_iteration * _players.size());
        ++iteration) {
     if (land_cases.empty()) break;
 
@@ -318,10 +417,9 @@ void Map::_generate_plains() {
     const std::vector<Case*>& neighbors = current->get_neighbors();
 
     for (Case* neighbor : neighbors) {
-      // 30% de chance de transformer le voisin en terre s'il est encore de
-      // l'eau
+      // 30% de
       if (neighbor->get_terrain() == TerrainsType::Ocean &&
-          (std::rand() % 100 < 30)) {
+          (std::rand() % 100 < luck)) {
         neighbor->set_terrain(TerrainsType::Plains);
         land_cases.push_back(neighbor);
       }
@@ -357,26 +455,6 @@ void Map::_generate_coasts() {
     // On transforme les cases trouvées en CoastLake
     for (Case* c : ocean_to_coast) {
       c->set_terrain(TerrainsType::CoastLake);
-    }
-  }
-}
-
-void Map::_generate_snow() {
-  // Mettre la neige à moins de 5 blocs en haut
-  for (int row = 0; row < 4; row++) {
-    for (int col = 0; col < _size_w; col++) {
-      if (_cases[row][col].get_terrain() == TerrainsType::Plains) {
-        _cases[row][col].set_terrain(TerrainsType::Snow);
-      }
-    }
-  }
-
-  // Mettre la neige à moins de 5 blocs en bas
-  for (int row = _size_h - 4; row < _size_h; row++) {
-    for (int col = 0; col < _size_w; col++) {
-      if (_cases[row][col].get_terrain() == TerrainsType::Plains) {
-        _cases[row][col].set_terrain(TerrainsType::Snow);
-      }
     }
   }
 }
@@ -417,7 +495,10 @@ bool Map::_try_place_players(std::vector<std::pair<int, int>>& spawn_points) {
   for (int row = 0; row < _size_h; row++) {
     for (int col = 0; col < _size_w; col++) {
       if (_cases[row][col].get_terrain() == TerrainsType::Plains) {
-        coordinate_possible.push_back({row, col});
+        // On définit une taille minimale pour qu'un départ soit juste
+        if (_get_continent_size(row, col) >= 80) {
+          coordinate_possible.push_back({row, col});
+        }
       }
     }
   }
@@ -440,6 +521,7 @@ bool Map::_try_place_players(std::vector<std::pair<int, int>>& spawn_points) {
 
       coordinate_possible.pop_back();
 
+      // On regarde si les autres joueurs sont à plus de 20 blocs de la case
       bool too_close = false;
       for (const auto& other : spawn_points) {
         int dist = _get_hex_distance(r, c, other.first, other.second);
@@ -470,15 +552,15 @@ bool Map::_try_place_players(std::vector<std::pair<int, int>>& spawn_points) {
   return true;
 }
 
-void Map::_generate_resources(std::vector<std::pair<int, int>> spawn_points) {
+void Map::_generate_resources(
+    const std::vector<std::pair<int, int>> spawn_points) {
   std::vector<std::pair<int, int>> resource_points;
   std::random_device rd;
   std::mt19937 g(rd());
 
   // 1. Placer les ressources nécessaires dans un rayon de 8 cases des joueurs
   std::vector<ResourceName> essentials = {
-      ResourceName::Iron, ResourceName::Copper, ResourceName::Corn,
-      ResourceName::Gold};
+      ResourceName::Iron, ResourceName::Copper, ResourceName::Corn};
 
   for (auto& start : spawn_points) {
     for (ResourceName res : essentials) {
@@ -559,55 +641,33 @@ void Map::_generate_resources(std::vector<std::pair<int, int>> spawn_points) {
   }
 }
 
-Unit* Map::_create_unit(UnitName name, Player* player, Case* c) {
-  // 1. Cas des unités Neutres
-  if (name == UnitName::Settler || name == UnitName::Worker) {
-    return new Neutral(name, player, c);
+int Map::_get_continent_size(const int row, const int col) const {
+  // 1. Utilisation d'un set de pointeurs pour le "visited"
+  std::unordered_set<const Case*> visited;
+  std::vector<const Case*> stack;
+
+  const Case* start_node = &_cases[row][col];
+
+  // On ne commence que si c'est de la terre
+  if (start_node->get_terrain() != TerrainsType::Plains) return 0;
+
+  stack.push_back(start_node);
+  visited.insert(start_node);
+
+  int count = 0;
+  while (!stack.empty()) {
+    const Case* current = stack.back();
+    stack.pop_back();
+    count++;
+
+    for (const Case* neighbor : current->get_neighbors()) {
+      // On ne compte que les plaines non visitées (On ignore l'Océan/Montagne)
+      if (neighbor->get_terrain() == TerrainsType::Plains &&
+          visited.find(neighbor) == visited.end()) {
+        visited.insert(neighbor);
+        stack.push_back(neighbor);
+      }
+    }
   }
-
-  // 2. Cas des unités Maritimes
-  if (name == UnitName::Galley || name == UnitName::Caravel ||
-      name == UnitName::Ironclad || name == UnitName::Destroyer ||
-      name == UnitName::Submarine || name == UnitName::AircraftCarrier) {
-    return new Maritime(name, player, c);
-  }
-
-  // 3. Cas des unités Aériennes
-  if (name == UnitName::Biplane || name == UnitName::Fighter ||
-      name == UnitName::JetFighter || name == UnitName::Bomber ||
-      name == UnitName::JetBomber) {
-    return new Aerial(name, player, c);
-  }
-
-  // 4. Par défaut : Unités Terrestres
-  return new Terrestrial(name, player, c);
-}
-
-bool Map::_is_resource_compatible(ResourceName resource,
-                                  TerrainsType terrain) const {
-  switch (resource) {
-    case ResourceName::Fish:
-    case ResourceName::Whale:
-    case ResourceName::Crab:
-    case ResourceName::Clam:
-      return (terrain == TerrainsType::CoastLake);
-
-    case ResourceName::Fur:
-    case ResourceName::Deer:
-      return (terrain == TerrainsType::Snow || terrain == TerrainsType::Plains);
-
-    case ResourceName::Iron:
-    case ResourceName::Copper:
-    case ResourceName::Coal:
-    case ResourceName::Silver:
-      return (terrain == TerrainsType::Plains);
-
-    case ResourceName::Oil:
-      return (terrain == TerrainsType::Plains ||
-              terrain == TerrainsType::Snow ||
-              terrain == TerrainsType::CoastLake);
-
-    default:
-      return (terrain == TerrainsType::Plains);
-  }
+  return count;
 }

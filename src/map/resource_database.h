@@ -1,3 +1,5 @@
+#pragma once
+
 #include <map>
 
 #include "type.h"
@@ -7,11 +9,11 @@ enum class ResourceType { Strategic, Luxury, Health };
 struct ResourceBonus {
   ResourceName name;
   ResourceType type;
-  int food_bonus;
-  int production_bonus;
-  int commerce_bonus;
-  int happiness_bonus;
-  int health_bonus;
+  int food;
+  int production;
+  int commerce;
+  int happiness;
+  int health;
 };
 
 class ResourceDatabase {

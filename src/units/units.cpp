@@ -1,68 +1,26 @@
-#pragma once
 #include "units.h"
 
 #include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 
 #include "case.h"
-#include "unit_utils.h"
-
-const std::map<UnitName, Stats> unitData = {
-    // Neutre
-    {UnitName::Settler, {1, 0, 1, 0}},
-    {UnitName::Worker, {1, 0, 1, 0}},
-
-    // Terrestre
-    {UnitName::Warrior, {100, 20, 2, 1}},
-    {UnitName::Swordsman, {120, 35, 2, 1}},
-    {UnitName::Musketman, {150, 55, 2, 1}},
-    {UnitName::Infantry, {180, 75, 3, 1}},
-    {UnitName::MechanizedInfantry, {220, 85, 4, 1}},
-
-    // A distance
-    {UnitName::Archer, {80, 15, 2, 2}},
-    {UnitName::Crossbowman, {100, 30, 2, 2}},
-    {UnitName::FieldCannon, {130, 50, 2, 2}},
-    {UnitName::MachineGun, {160, 70, 2, 1}},
-
-    // Cavalerie
-    {UnitName::Horseman, {110, 36, 4, 1}},
-    {UnitName::Knight, {140, 48, 4, 1}},
-    {UnitName::Cuirassier, {170, 65, 4, 1}},
-    {UnitName::Tank, {250, 80, 4, 1}},
-    {UnitName::ModernArmor, {300, 90, 5, 1}},
-
-    // Naval
-    {UnitName::Galley, {120, 30, 3, 1}},
-    {UnitName::Caravel, {160, 50, 4, 1}},
-    {UnitName::Ironclad, {220, 70, 4, 1}},
-    {UnitName::Destroyer, {280, 85, 5, 1}},
-    {UnitName::Submarine, {150, 75, 4, 3}},
-    {UnitName::AircraftCarrier, {350, 65, 3, 1}},
-
-    // Aérienne
-    {UnitName::Biplane, {100, 60, 6, 3}},
-    {UnitName::Fighter, {140, 80, 8, 4}},
-    {UnitName::JetFighter, {180, 95, 10, 5}},
-    {UnitName::Bomber, {150, 85, 7, 6}},
-    {UnitName::JetBomber, {200, 110, 9, 8}}};
-
-const StrengthWeaknessMatrix unit_strength_weakness_matrix =
-    UnitParser::load_strength_weakness_matrix();
 
 int Unit::_id_counter = 0;
 
 Unit::Unit(UnitName name, Player* player, Case* case_unit,
            std::vector<TerrainsType> allow_terrain)
-    : name(name),
+    : id(_id_counter++),
+      name(name),
       player(player),
       case_unit(case_unit),
-      stats(unitData.at(name)),
+      stats(UNIT_STATS.at(name)),
       allow_terrain(allow_terrain),
       active(true),
-      on_guard(false) {
-  this->id = _id_counter++;
-}
+      on_guard(false) {}
 
 Unit::~Unit() {
   // 1. On se retire de la case où l'on se trouve
@@ -76,9 +34,130 @@ Unit::~Unit() {
   }
 }
 
-bool Unit::destroy_building_is_possible() {
+std::vector<UnitName> Unit::get_all_units() {
+  std::vector<UnitName> units;
+  // On convertit l'entier en UnitName via static_cast
+  for (int i = 0; i <= static_cast<int>(UnitName::Explorer); ++i) {
+    units.push_back(static_cast<UnitName>(i));
+  }
+  return units;
+}
+
+UnitName Unit::string_to_unit_name(const std::string& name) {
+  auto it = UNIT_STRING_NAME.find(name);
+  if (it != UNIT_STRING_NAME.end()) {
+    return it->second;
+  }
+  std::string error_msg =
+      "ERREUR FATALE : L'unite '" + name +
+      "' est introuvable dans le dictionnaire de correspondance. " +
+      "Verifiez l'orthographe dans le fichier CSV.";
+
+  throw std::runtime_error(error_msg);
+}
+
+StrengthWeaknessMatrix Unit::load_strength_weakness_matrix() {
+  StrengthWeaknessMatrix matrix;
+  std::ifstream file("../../src/files/csv/matrix_units_strength_weakness.csv");
+
+  if (!file.is_open()) {
+    std::cerr << "Impossible d'ouvrir le fichier CSV." << std::endl;
+    return matrix;
+  }
+
+  std::string line;
+  int line_count = 1;        // Pour le débug
+  std::getline(file, line);  // Ignore l'en-tête
+
+  // L'ordre des colonnes doit correspondre au vecteur statique
+  // _unit_type_order On suppose que l'ordre du CSV est le même que UnitName
+  std::vector<UnitName> all_units = get_all_units();
+
+  try {
+    while (std::getline(file, line)) {
+      std::stringstream ss(line);
+      std::string attacker_str;
+      std::getline(ss, attacker_str,
+                   ',');  // Récupérer le nom de l'attaquant (1ère colonne)
+
+      // Convertir le string en UnitName
+      UnitName attacker = string_to_unit_name(attacker_str);
+
+      std::string value_str;
+      int col_index = 0;
+      while (std::getline(ss, value_str, ',')) {
+        if (!value_str.empty()) {
+          double val = std::stod(value_str);
+          UnitName target = all_units[col_index];
+          matrix[attacker][target] = val;
+          col_index++;
+        }
+      }
+      line_count++;
+    }
+    return matrix;
+  } catch (const std::exception& e) {
+    std::cerr << "\n========================================" << std::endl;
+    std::cerr << "ERREUR DE CHARGEMENT (Ligne " << line_count << ")"
+              << std::endl;
+    std::cerr << e.what() << std::endl;
+    std::cerr << "========================================\n" << std::endl;
+    exit(1);
+  }
+}
+
+int Unit::calculate_damage(const Unit* ennemy) const {
+  // Si l'unité est affaiblie, elle fait moins de dégâts
+  double percentage_hp_remaining =
+      static_cast<double>(stats.hp) / UNIT_STATS.at(this->get_name()).hp;
+  if (percentage_hp_remaining < 0.3) {
+    percentage_hp_remaining = 0.3;
+  }
+
+  StrengthWeaknessMatrix unit_strength_weakness_matrix =
+      load_strength_weakness_matrix();
+
+  // Calcul des dégâts
+  double strength_weakness =
+      unit_strength_weakness_matrix.at(this->get_name()).at(ennemy->get_name());
+  double raw_damage =
+      stats.power * percentage_hp_remaining * (1.0 + strength_weakness);
+
+  // Si l'unité est en garde alors la puissance de l'attaque prend -30%
+  if (ennemy->is_on_guard()) {
+    raw_damage *= 0.7;
+  }
+
+  return static_cast<int>(raw_damage);
+}
+
+void Unit::fight(Unit* ennemy) {
+  // On attaque l'ennemie
+  ennemy->stats.hp -= calculate_damage(this);
+  // L'ennemie riposte
+  stats.hp -= calculate_damage(ennemy);
+}
+
+void Unit::heal() {
+  int max_hp = UNIT_STATS.at(name).hp;
+
+  if (stats.hp < max_hp) {
+    int amount_to_heal = static_cast<int>(max_hp * 0.2);
+
+    stats.hp = std::min<int>(stats.hp + amount_to_heal, max_hp);
+  }
+}
+
+bool Unit::find_terrain(const TerrainsType& target_terrain) const {
+  auto it =
+      std::find(allow_terrain.begin(), allow_terrain.end(), target_terrain);
+
+  return it != allow_terrain.end();
+}
+
+bool Unit::destroy_building_is_possible() const {
   // 1. L'unité est une troupe
-  if (!_is_military()) {
+  if (!is_military()) {
     return false;
   }
 
@@ -104,53 +183,7 @@ void Unit::destroy_building() {
   switch_active();
 }
 
-int Unit::calculate_damage(const Unit* ennemy) const {
-  // Si l'unité est affaiblie, elle fait moins de dégâts
-  double percentage_hp_remaining =
-      static_cast<double>(stats.hp) / unitData.at(this->get_name()).hp;
-  if (percentage_hp_remaining < 0.3) {
-    percentage_hp_remaining = 0.3;
-  }
-
-  // Calcul des dégâts
-  double strength_weakness =
-      unit_strength_weakness_matrix.at(this->get_name()).at(ennemy->get_name());
-  double raw_damage =
-      stats.power * percentage_hp_remaining * (1.0 + strength_weakness);
-
-  // Si l'unité est en garde alors la puissance de l'attaque prend -30%
-  if (ennemy->is_on_guard()) {
-    raw_damage *= 0.7;
-  }
-
-  return static_cast<int>(raw_damage);
-}
-
-void Unit::fight(Unit* ennemy) {
-  // On attaque l'ennemie
-  ennemy->stats.hp -= calculate_damage(this);
-  // L'ennemie riposte
-  stats.hp -= calculate_damage(ennemy);
-}
-
-void Unit::heal() {
-  int max_hp = unitData.at(name).hp;
-
-  if (stats.hp < max_hp) {
-    int amount_to_heal = static_cast<int>(max_hp * 0.2);
-
-    stats.hp = std::min<int>(stats.hp + amount_to_heal, max_hp);
-  }
-}
-
-bool Unit::find_terrain(const TerrainsType& target_terrain) const {
-  auto it =
-      std::find(allow_terrain.begin(), allow_terrain.end(), target_terrain);
-
-  return it != allow_terrain.end();
-}
-
-bool Unit::_is_military() const {
+bool Unit::is_military() const {
   if ((name != UnitName::Settler) && (name != UnitName::Worker)) {
     return true;
   }

@@ -1,6 +1,6 @@
 #include "resource_database.h"
 
-const std::map<ResourceName, ResourceBonus> data = {
+const std::map<ResourceName, ResourceBonus> ResourceDatabase::_data = {
     // Stratégique
     {ResourceName::Horse,
      {ResourceName::Horse, ResourceType::Strategic, 0, 1, 1, 0, 0}},
@@ -42,8 +42,6 @@ const std::map<ResourceName, ResourceBonus> data = {
      {ResourceName::Crab, ResourceType::Health, 1, 0, 0, 0, 1}},
 
     // Luxe
-    {ResourceName::Gold,
-     {ResourceName::Gold, ResourceType::Luxury, 0, 0, 3, 1, 0}},
     {ResourceName::Silver,
      {ResourceName::Silver, ResourceType::Luxury, 0, 0, 2, 1, 0}},
     {ResourceName::Gems,

@@ -8,20 +8,36 @@
 
 class Unit;
 class Case;
+class City;
 
 using ResourceInventory = std::map<ResourceName, int>;
+
+struct PlayerOwns {
+  int gold = 0;
+  int science = 0;
+  int culture = 0;
+};
 
 class Player {
  public:
   Player(Country country);
   ~Player();
 
+  /** @brief Permet à l'utilisateur de choisir son pays dans le terminal */
+  static Country choice_country(const std::vector<Country>& excluded_countries);
+
+  void clear_units();
   void add_unit(Unit* unit);
   void remove_unit(Unit* unit);
-  void clear_units();
 
   void add_building(Case* c);
   void remove_building(Case* c);
+
+  void clear_citys();
+  void add_city(City* c);
+  void remove_city(City* c);
+
+  void process_turn();
 
   void add_building_resource(ResourceName name) {
     _buildings_resources[name] += 1;
@@ -38,6 +54,8 @@ class Player {
   Country _country;
   std::vector<Unit*> _units;
   std::vector<Case*> _buildings;
+  std::vector<City*> _citys;
+  PlayerOwns _data;
   ResourceInventory _resources;  // Nombre de ressources possédant le joueur
   ResourceInventory
       _buildings_resources;  // Nombre de bâtiments générant une ressource

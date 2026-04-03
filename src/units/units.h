@@ -9,17 +9,7 @@
 
 class Case;
 
-struct Stats {
-  int hp;
-  int power;
-  int speed;
-  int range;
-};
-
-extern const std::map<UnitName, Stats> unitData;
-
 using StrengthWeaknessMatrix = std::map<UnitName, std::map<UnitName, double>>;
-extern const StrengthWeaknessMatrix unit_strength_weakness_matrix;
 
 class Unit {
  public:
@@ -27,8 +17,9 @@ class Unit {
        std::vector<TerrainsType> allow_terrain);
   virtual ~Unit();
 
-  bool destroy_building_is_possible();
-  void destroy_building();
+  static std::vector<UnitName> get_all_units();
+  static UnitName string_to_unit_name(const std::string& name);
+  static StrengthWeaknessMatrix load_strength_weakness_matrix();
 
   /** @brief Calcule les dégâts infligés à un ennemi. */
   int calculate_damage(const Unit* ennemy) const;
@@ -39,35 +30,42 @@ class Unit {
   /** @brief Soigne l'unité de 20% de ses PV maximum. */
   void heal();
 
-  /** @brief Vérifie si l'unité peut se déplacer sur un type de terrain. */
+  /** @brief Vérifie si l'unité peut se déplacer sur un type de terrain
+   * spécifique. */
   bool find_terrain(const TerrainsType& target_terrain) const;
 
-  void switch_active() { active = !active; }
-  void switch_on_guard() { on_guard = !on_guard; }
-  void set_player(Player* p) { player = p; }
-  void set_case_unit(Case* c) { case_unit = c; }
+  bool destroy_building_is_possible() const;
+  void destroy_building();
+
+  bool is_military() const;
+  UnitStats get_stats() const { return stats; }
+  int get_movement() const { return stats.movement; }
+  std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
 
   int get_id() const { return id; }
-  int get_speed() const { return stats.speed; }
-  bool is_active() const { return active; }
-  bool is_on_guard() const { return on_guard; }
-  bool _is_military() const;
-
   UnitName get_name() const { return name; }
-  Player* get_player() { return player; }
-  Stats get_stats() const { return stats; }
-  Case* get_case_unit() { return case_unit; }
-  std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
+
+  Player* get_player() const { return player; }
+  void set_player(Player* p) { player = p; }
+
+  Case* get_case_unit() const { return case_unit; }
+  void set_unit_case(Case* c) { case_unit = c; }
+
+  bool is_active() const { return active; }
+  void switch_active() { active = !active; }
+
+  bool is_on_guard() const { return on_guard; }
+  void switch_on_guard() { on_guard = !on_guard; }
 
  protected:
   int id;
   UnitName name;
   Player* player;
-  Stats stats;
-  bool active;    // par default à true quand l'unité apparaît
-  bool on_guard;  // par default à false quand l'unité apparaît
   Case* case_unit;
+  UnitStats stats;
   std::vector<TerrainsType> allow_terrain;
+  bool active;    // L'unité en attente d'ordre
+  bool on_guard;  // L'unité se protège
 
  private:
   static int _id_counter;
