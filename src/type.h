@@ -4,80 +4,100 @@
 #include <string>
 #include <vector>
 
-enum class TerrainsType { CoastLake, Mountains, Ocean, Plains, Snow };
+enum class TerrainsType {
+  Coast,
+  Desert,
+  Grassland,
+  Ice,
+  Ocean,
+  Plains,
+  Tundra
+};
+
+enum class TerrainElevation { Flat, Hill, Mountain };
+
+enum class TerrainFeature { None, Forest, Jungle };
 
 enum class ResourceName {
   None,
 
-  // Ressources Stratégiques
+  // --- Strategic ---
+  Aluminum,
+  Coal,
+  Copper,
   Horse,
   Iron,
-  Copper,
-  Coal,
+  Ivory,
   Oil,
   Uranium,
-  Aluminum,
 
-  // Ressources de Santé
-  Corn,
-  Rice,
-  Wheat,
+  // --- Production ---
+  Marble,
+  Stone,
+
+  // --- Food ---
   Banana,
-  Deer,
-  Pig,
-  Cow,
-  Sheep,
-  Fish,
   Clam,
+  Corn,
+  Cow,
   Crab,
+  Deer,
+  Fish,
+  Pig,
+  Rice,
+  Sheep,
+  Wheat,
+  Sugar,
+  Whale,
 
-  // Ressources de Luxe
-  Silver,
-  Gems,
-  Ivory,
-  Fur,
+  // --- Commerce ---
   Dye,
+  Fur,
+  Gems,
+  Gold,
   Incense,
   Silk,
-  Sugar,
+  Silver,
   Spices,
-  Wine,
-  Whale
+  Wine
 };
 
-enum class BuildingName {
+enum class ImprovementName {
   None,
-  Workshop,          // Atelier
-  WhalingBoats,      // Baleiniers
-  FishingBoats,      // Bateaux de pêche
   Camp,              // Camp
-  Quarry,            // Carrière
   Cottage,           // Cottage
-  Winery,            // Exploitation vinicole
   Farm,              // Ferme
+  FishingBoats,      // Bateaux de pêche
+  ForestPreserve,    // Réserve boisée
   Fort,              // Fort
   Hamlet,            // Hameau
-  Mine,              // Mine
-  Watermill,         // Moulin à eau
-  Windmill,          // Moulin à vent
-  Plantation,        // Plantation
-  OffshorePlatform,  // Plate-forme offshore
-  Well,              // Puits
-  Pasture,           // Pâturage
-  Ruins,             // Ruines
-  ForestPreserve,    // Réserve boisée
   LumberMill,        // Scierie
-  Village,           // Village
+  Mine,              // Mine
+  OffshorePlatform,  // Plate-forme offshore
+  Pasture,           // Pâturage
+  Plantation,        // Plantation
+  Quarry,            // Carrière
+  Town,              // Ville
   TribalVillage,     // Village tribal
+  Village,           // Village
+  Watermill,         // Moulin à eau
+  Well,              // Puits
+  WhalingBoats,      // Baleiniers
+  Windmill,          // Moulin à vent
+  Winery,            // Exploitation vinicole
+  Workshop           // Atelier
 };
 
 struct Yields {
   int food = 0;
   int production = 0;
   int commerce = 0;
-  double defense = 0;
+  int culture = 0;
+  int science = 0;
   int happiness = 0;
   int health = 0;
+  int sickness = 0;
+  double defense = 0;
 };
 
 enum class Country {
@@ -93,6 +113,22 @@ enum class Country {
   Italy,
   UnitedStates
 };
+
+enum class Color {
+  Transparent,    // Neutral
+  RoyalBlue,      // France
+  DarkGrey,       // Germany
+  Crimson,        // UnitedKingdom
+  White,          // Russia
+  GoldenRod,      // Egypt
+  BrightRed,      // Switzerland
+  CherryBlossom,  // Japan
+  Orange,         // Spain
+  Emerald,        // Italy
+  NavyBlue        // UnitedStates
+};
+
+extern const std::map<Country, Color> COUNTRY_COLOR;
 
 enum class UnitType {
   Air,
@@ -110,11 +146,14 @@ enum class UnitType {
 };
 
 enum class UnitName {
+  None,
+
   // Civil
   Settler,
   Worker,
   FastWorker,
   Spy,
+  WorkBoat,
 
   // Melee
   Warrior,
@@ -194,7 +233,6 @@ enum class UnitName {
   MobileArtillery,
 
   // Naval
-  WorkBoat,
   Galley,
   Trireme,
   Caravel,
@@ -242,3 +280,49 @@ struct UnitStats {
 extern const std::map<UnitName, UnitStats> UNIT_STATS;
 extern const std::map<UnitName, UnitType> UNIT_TYPE;
 extern const std::map<std::string, UnitName> UNIT_STRING_NAME;
+
+enum class UnitAction {
+  // --- All ---
+  SkipTurn,
+  Delete,
+  GoToMove,
+  RegroupUnit,
+  RegroupSameUnit,
+
+  // --- Unité Terrestre ---
+  Fortify,  // Mise en garde
+  Pillage,
+  Bombard,  // Affaiblir les défenses d'une ville
+
+  // --- Settler ---
+  BuildCity,
+
+  // --- Worker ---
+  RouteToMove,
+  ChopDownForest,
+  BuildRoad,
+  BuildCamp,
+  BuildCottage,
+  BuildFarm,
+  BuildMine,
+  BuildForestPreserve,
+  BuildFort,
+  BuildHamlet,
+  BuildLumberMill,
+  BuildOffshorePlatform,
+  BuildPasture,
+  BuildPlantation,
+  BuildQuarry,
+  BuildTown,
+  BuildTribalVillage,
+  BuildVillage,
+  BuildWatermill,
+  BuildWell,
+  BuildWindmill,
+  BuildWinery,
+  BuildWorkshop,
+
+  // --- WorkBoat ---
+  BuildFishingBoats,
+  BuildWhalingBoats,
+};

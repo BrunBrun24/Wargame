@@ -30,8 +30,8 @@ class Player {
   void add_unit(Unit* unit);
   void remove_unit(Unit* unit);
 
-  void add_building(Case* c);
-  void remove_building(Case* c);
+  void add_improvement(Case* c);
+  void remove_improvement(Case* c);
 
   void clear_citys();
   void add_city(City* c);
@@ -39,8 +39,8 @@ class Player {
 
   void process_turn();
 
-  void add_building_resource(ResourceName name) {
-    _buildings_resources[name] += 1;
+  void add_improvement_resource(ResourceName name) {
+    _improvements_resources[name] += 1;
   };
 
   int get_id() const { return _id; }
@@ -53,10 +53,10 @@ class Player {
   int _id;
   Country _country;
   std::vector<Unit*> _units;
-  std::vector<Case*> _buildings;
+  std::vector<Case*> _improvements;
   std::vector<City*> _citys;
   PlayerOwns _data;
   ResourceInventory _resources;  // Nombre de ressources possédant le joueur
   ResourceInventory
-      _buildings_resources;  // Nombre de bâtiments générant une ressource
+      _improvements_resources;  // Nombre de bâtiments générant une ressource
 };

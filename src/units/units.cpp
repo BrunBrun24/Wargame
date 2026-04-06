@@ -155,7 +155,18 @@ bool Unit::find_terrain(const TerrainsType& target_terrain) const {
   return it != allow_terrain.end();
 }
 
-bool Unit::destroy_building_is_possible() const {
+std::vector<UnitAction> Unit::get_unit_actions(const Unit* unit) {
+  std::vector<UnitAction> available_actions;
+  available_actions.push_back(UnitAction::SkipTurn);
+  available_actions.push_back(UnitAction::Delete);
+  available_actions.push_back(UnitAction::GoToMove);
+  available_actions.push_back(UnitAction::RegroupUnit);
+  available_actions.push_back(UnitAction::RegroupSameUnit);
+
+  return available_actions;
+}
+
+bool Unit::destroy_improvement_is_possible() const {
   // 1. L'unité est une troupe
   if (!is_military()) {
     return false;
@@ -163,7 +174,7 @@ bool Unit::destroy_building_is_possible() const {
 
   // 2. Un bâtiment est sur la case de l'unité ET le bâtiment doit-être
   // différents du pays de l'unité
-  if ((case_unit->get_building() == BuildingName::None) &&
+  if ((case_unit->get_terrain().improvement == ImprovementName::None) &&
       (case_unit->get_country() != player->get_country())) {
     return false;
   }
@@ -171,12 +182,12 @@ bool Unit::destroy_building_is_possible() const {
   return true;
 }
 
-void Unit::destroy_building() {
+void Unit::destroy_improvement() {
   // 1. On détruit le bâtiment
-  case_unit->set_building(BuildingName::None);
+  case_unit->get_terrain().improvement = ImprovementName::None;
 
   // 2. On dissocie le bâtiment du joueur
-  case_unit->get_player()->remove_building(case_unit);
+  case_unit->get_player()->remove_improvement(case_unit);
   case_unit->set_player(nullptr);
 
   // 3. L'unité passe son tour

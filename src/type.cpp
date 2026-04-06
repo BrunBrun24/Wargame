@@ -2,6 +2,19 @@
 
 #include <map>
 
+const std::map<Country, Color> COUNTRY_COLOR = {
+    {Country::Neutral, Color::Transparent},
+    {Country::France, Color::RoyalBlue},
+    {Country::Germany, Color::DarkGrey},
+    {Country::UnitedKingdom, Color::Crimson},
+    {Country::Russia, Color::White},
+    {Country::Egypt, Color::GoldenRod},
+    {Country::Switzerland, Color::BrightRed},
+    {Country::Japan, Color::CherryBlossom},
+    {Country::Spain, Color::Orange},
+    {Country::Italy, Color::Emerald},
+    {Country::UnitedStates, Color::NavyBlue}};
+
 const std::map<UnitName, UnitStats> UNIT_STATS = {
     // --- Civil ---
     {UnitName::Settler, {1, 0, 2, 100}},
@@ -249,6 +262,7 @@ const std::map<std::string, UnitName> UNIT_STRING_NAME = {
     {"Worker", UnitName::Worker},
     {"FastWorker", UnitName::FastWorker},
     {"Spy", UnitName::Spy},
+    {"WorkBoat", UnitName::WorkBoat},
 
     // Melee
     {"Warrior", UnitName::Warrior},
@@ -328,7 +342,6 @@ const std::map<std::string, UnitName> UNIT_STRING_NAME = {
     {"MobileArtillery", UnitName::MobileArtillery},
 
     // Naval
-    {"WorkBoat", UnitName::WorkBoat},
     {"Galley", UnitName::Galley},
     {"Trireme", UnitName::Trireme},
     {"Caravel", UnitName::Caravel},

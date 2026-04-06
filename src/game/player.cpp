@@ -32,7 +32,7 @@ Player::~Player() {
 
 Country Player::choice_country(const std::vector<Country>& excluded_countries) {
   int choix = 0;
-  Country selected;
+  Country selected = Country::Neutral;
 
   // Helper pour savoir si le pays est déjà pris
   auto is_taken = [&](int val) {
@@ -109,19 +109,19 @@ void Player::remove_unit(Unit* unit) {
   }
 }
 
-void Player::add_building(Case* c) {
+void Player::add_improvement(Case* c) {
   if (c) {
-    _buildings.push_back(c);
+    _improvements.push_back(c);
   }
 }
 
-void Player::remove_building(Case* c) {
+void Player::remove_improvement(Case* c) {
   // On cherche le bâtiment par son ID
-  auto it = std::find_if(_buildings.begin(), _buildings.end(),
+  auto it = std::find_if(_improvements.begin(), _improvements.end(),
                          [&](Case* ca) { return ca->get_id() == c->get_id(); });
 
-  if (it != _buildings.end()) {
-    _buildings.erase(it);
+  if (it != _improvements.end()) {
+    _improvements.erase(it);
   }
 }
 
@@ -155,15 +155,7 @@ void Player::process_turn() {
   // 1. Gestion des ressources
   for (City* c : _citys) {
     if (c) {
-      // 1. Calcule le rendement brut de la ville
-      Yields raw_yields = c->calculate_base_yields(c->get_case_city());
-
-      // 2. Mets à jour la ville
-      c->process_consumption_food(raw_yields);
-      c->process_consumption_production(raw_yields);
-      c->process_consumption_commerce(raw_yields);
-
-      // 3. Mets à jour les ressources que possède le joueur
+      c->update_data();
     }
   }
 

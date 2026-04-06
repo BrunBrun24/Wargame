@@ -27,8 +27,8 @@ class Map {
                         Player* player) const;
 
   /** @brief Ajoute un bâtiment sur la case */
-  void add_building_to_case(Case* target_case,
-                            const BuildingName building) const;
+  void add_improvement_to_case(Case* target_case,
+                               const ImprovementName improvement) const;
 
   void create_map();
   void render_debug() const;
@@ -50,23 +50,26 @@ class Map {
   int _get_hex_distance(const int r1, const int c1, const int r2,
                         const int c2) const;
 
+  /** @brief Vérifie si on en se trouve à 2 cases d'une terre */
+  bool _is_near_land(const int row, const int col) const;
+
   /** @brief Vérifie si une ressource peut apparaître sur un type de terrain
    * spécifique. */
-  bool _is_resource_compatible(const ResourceName resource,
-                               const TerrainsType terrain) const;
+  bool _is_resource_compatible(const ResourceName resource, int r, int c) const;
 
   /** @brief Factory pour instancier le bon type d'unité (Aérienne, Terrestre,
    * etc). */
   Unit* _create_unit(const UnitName name, Player* player, Case* c) const;
 
   void _reset_map();
-  void _generate_snow();
   void _generate_ocean();
   void _generate_plains();
+  void _apply_latitudinal_climate();
+  void _generate_hills_and_peaks();
+  void _generate_vegetation();
   void _generate_coasts();
-  void _generate_mountains();
   bool _try_place_players(std::vector<std::pair<int, int>>& spawn_points);
   void _generate_resources(const std::vector<std::pair<int, int>> spawn_points);
-  
+
   int _get_continent_size(int const row, int const col) const;
 };

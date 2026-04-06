@@ -3,21 +3,20 @@
 #include <algorithm>
 #include <queue>
 #include <unordered_map>
+#include <vector>
 
-#include "building_database.h"
 #include "city.h"
+#include "improvement_database.h"
 #include "player.h"
 #include "resource_database.h"
 #include "units.h"
 
 int Case::_id_counter = 0;
 
-Case::Case(TerrainsType type, Player* player, Country country)
+Case::Case(Terrain terrain, Country country, Player* player)
     : _id(_id_counter++),
+      _terrain(terrain),
       _country(country),
-      _terrain(type),
-      _resource(ResourceName::None),
-      _building(BuildingName::None),
       _player(player),
       _city(nullptr) {}
 
@@ -67,12 +66,12 @@ Course Case::movement_is_possible(const Case* target_case, const Unit* unit) {
 
     for (Case* neighbor : current->_neighbors) {
       // Vérification du terrain (Spécifique aux unités)
-      if (!unit->find_terrain(neighbor->get_terrain())) {
+      if (!unit->find_terrain(neighbor->get_terrain().type)) {
         continue;
       }
 
       // Vérification s'il y a une unité ennemie sur le terrain
-      if (!unit->find_terrain(neighbor->get_terrain())) {
+      if (!unit->find_terrain(neighbor->get_terrain().type)) {
         continue;
       }
 
@@ -227,7 +226,8 @@ Course Case::distance_between(const Case* target_case) {
   return {false, {}};
 }
 
-Course Case::calculate_first_building_distance(const BuildingName building) {
+Course Case::calculate_first_improvement_distance(
+    const ImprovementName improvement) {
   // La file contient les cases à visiter
   std::queue<Case*> queue;
   // Permet de savoir si une case a été vue ET de stocker d'où on vient (parent)
@@ -244,7 +244,7 @@ Course Case::calculate_first_building_distance(const BuildingName building) {
     queue.pop();
 
     // 1. Condition d'arrêt : on a trouvé le bâtiment
-    if (current->get_building() == building) {
+    if (current->get_terrain().improvement == improvement) {
       target = current;
       break;
     }
@@ -324,28 +324,64 @@ Course Case::calculate_first_city_distance() {
 }
 
 Yields Case::get_total_yields() const {
-  // 1. Rendement de la case + Rendement du centre-ville (Minimum 2 Food, 1
-  // Prod, 1 Commerce)
+  // 1. Rendement de la case
   Yields total = get_base_yields();
-  total.food += 2;
-  total.production += 1;
-  total.commerce += 1;
 
-  // 2. Bonus des ressources
-  if (_resource != ResourceName::None) {
-    const ResourceBonus& bonus = ResourceDatabase::get_info(_resource);
-    total.food += bonus.food;
-    total.production += bonus.production;
-    total.commerce += bonus.commerce;
+  if ((_terrain.elevation == TerrainElevation::Hill) &&
+      (_terrain.feature == TerrainFeature::Forest)) {
+    total.production += 1;
+  } else if (_terrain.feature == TerrainFeature::Forest) {
+    total.production -= 1;
   }
 
-  // 3. Bonus des Bâtiments
-  auto bonus = BuildingDatabase::get_info(_building);
-  total.food += bonus.food;
-  total.production += bonus.production;
-  total.commerce += bonus.commerce;
+  // 2. Bonus des ressources et des aménagements
+  if (_terrain.resource != ResourceName::None) {
+    // On regarde s'il y a une ressource sur le terrain
+    const Bonus& bonus = ResourceDatabase::get_info(_terrain.resource);
+    total.food += bonus.resource_bonus.yields.food;
+    total.production += bonus.resource_bonus.yields.production;
+    total.commerce += bonus.resource_bonus.yields.commerce;
+    total.culture += bonus.resource_bonus.yields.culture;
+    total.science += bonus.resource_bonus.yields.science;
+    total.happiness += bonus.resource_bonus.yields.happiness;
+    total.health += bonus.resource_bonus.yields.health;
+    total.sickness += bonus.resource_bonus.yields.sickness;
+    total.defense += bonus.resource_bonus.yields.defense;
+
+    // On regarde si il y a un aménagement sur la ressource
+    if (_terrain.improvement != ImprovementName::None) {
+      total.food += bonus.improvement_bonus.yields.food;
+      total.production += bonus.improvement_bonus.yields.production;
+      total.commerce += bonus.improvement_bonus.yields.commerce;
+      total.culture += bonus.resource_bonus.yields.culture;
+      total.science += bonus.resource_bonus.yields.science;
+      total.happiness += bonus.improvement_bonus.yields.happiness;
+      total.health += bonus.improvement_bonus.yields.health;
+      total.sickness += bonus.improvement_bonus.yields.sickness;
+      total.defense += bonus.improvement_bonus.yields.defense;
+    }
+  }
+
+  // 3. Bonus des bâtiments de la ville
 
   return total;
+}
+
+Yields Case::get_base_yields() const {
+  switch (_terrain.type) {
+    case TerrainsType::Coast:
+      return {1, 0, 3, 0, 0, 0, 0, 0, 0};
+    case TerrainsType::Grassland:
+      return {2, 0, 0, 0, 0, 0, 0, 0, 0};
+    case TerrainsType::Ocean:
+      return {1, 0, 1, 0, 0, 0, 0, 0, 0};
+    case TerrainsType::Plains:
+      return {1, 1, 0, 0, 0, 0, 0, 0, 0};
+    case TerrainsType::Tundra:
+      return {1, 0, 0, 0, 0, 0, 0, 0, 0};
+    default:
+      return {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  }
 }
 
 void Case::add_unit(Unit* unit) {
@@ -396,7 +432,7 @@ bool Case::create_city_is_possible(const Case* target_case, const Unit* unit) {
 
 void Case::create_city(Case* target_case, Unit* settler) {
   // 1. S'il y a un bâtiment on le détruit
-  target_case->set_building(BuildingName::None);
+  target_case->get_terrain().improvement = ImprovementName::None;
 
   // 2. On créer la ville
   City* city = new City(target_case, settler->get_player());
@@ -409,45 +445,6 @@ void Case::create_city(Case* target_case, Unit* settler) {
   // Le delete appelle le destructeur ~Unit() qui s'occupe de
   // nettoyer les listes dans Case et Player.
   delete settler;
-}
-
-bool Case::create_building_is_possible(const Case* target_case,
-                                       const Unit* unit) {
-  // 1. On vérifie si l'unité est un ouvrier
-  if (unit->get_name() != UnitName::Worker) {
-    return false;
-  }
-
-  // 2. Renvoyez la liste de constructions selon le type de ressoucre sur la
-  // case
-
-  return true;
-}
-
-void Case::create_building(Case* target_case, Unit* worker,
-                           const BuildingName building) {
-  // 1. On transforme la case
-  target_case->set_building(building);
-
-  // 2. On lie la ville au joueur
-  target_case->set_player(worker->get_player());
-  target_case->get_player()->add_building(target_case);
-
-  // 3. L'ouvrier passe son tour
-  worker->switch_active();
-}
-
-Yields Case::get_base_yields() const {
-  switch (_terrain) {
-    case TerrainsType::Plains:
-      return {1, 1, 0, 0};
-    case TerrainsType::CoastLake:
-      return {1, 0, 2, 0};
-    case TerrainsType::Ocean:
-      return {1, 0, 1, 0};
-    default:
-      return {0, 0, 0, 0};
-  }
 }
 
 Country Case::get_unit_country() const {
@@ -470,7 +467,7 @@ std::string Case::get_description() const {
 
     for (const auto& [str, enum_val] : UNIT_STRING_NAME) {
       if (enum_val == name) {
-        return str;
+        return "Unit";
       }
     }
 
@@ -479,7 +476,7 @@ std::string Case::get_description() const {
   }
 
   // 3. Priorité 3 : TOUTES les Ressources Naturelles
-  ResourceName res = get_resource();
+  ResourceName res = get_terrain().resource;
   if (res != ResourceName::None) {
     switch (res) {
       // Stratégiques
@@ -551,37 +548,48 @@ std::string Case::get_description() const {
     }
   }
 
-  // 4. Par défaut : Le type de terrain
-  switch (get_terrain()) {
-    case TerrainsType::Plains:
-      return "Plains";
+  // 4. Priorité 4 : Les arbres
+  if (get_terrain().feature != TerrainFeature::None) {
+    switch (_terrain.feature) {
+      case TerrainFeature::Forest:
+        return "Forest";
+      case TerrainFeature::Jungle:
+        return "Jungle";
+      default:
+        "?";
+    }
+  }
+
+  // 5. Priorité 4 : Les charactéristiques du terrain
+  if (get_terrain().elevation != TerrainElevation::Flat) {
+    switch (_terrain.elevation) {
+      case TerrainElevation::Hill:
+        return "Hill";
+      case TerrainElevation::Mountain:
+        return "Mountain";
+      default:
+        "?";
+    }
+  }
+
+  // 6. Par défaut : Le type de terrain
+  switch (_terrain.type) {
+    case TerrainsType::Coast:
+      return "Coast";
+    case TerrainsType::Desert:
+      return "Desert";
+    case TerrainsType::Grassland:
+      return "Grassland";
+    case TerrainsType::Ice:
+      return "Ice";
     case TerrainsType::Ocean:
       return "Ocean";
-    case TerrainsType::Mountains:
-      return "Mountains";
-    case TerrainsType::Snow:
-      return "Snow";
-    case TerrainsType::CoastLake:
-      return "CoastLake";
-    default:
-      return "UnknownTerrain";
-  }
-}
-
-char Case::get_debug_char() const {
-  switch (_terrain) {
-    case TerrainsType::CoastLake:
-      return 'C';
-    case TerrainsType::Mountains:
-      return 'M';
-    case TerrainsType::Ocean:
-      return 'O';
     case TerrainsType::Plains:
-      return 'P';
-    case TerrainsType::Snow:
-      return 'S';
+      return "Plains";
+    case TerrainsType::Tundra:
+      return "Tundra";
     default:
-      return '?';
+      return "?";
   }
 }
 

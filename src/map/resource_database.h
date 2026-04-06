@@ -4,24 +4,28 @@
 
 #include "type.h"
 
-enum class ResourceType { Strategic, Luxury, Health };
+enum class ResourceType { Strategic, Production, Food, Commerce };
 
 struct ResourceBonus {
-  ResourceName name;
   ResourceType type;
-  int food;
-  int production;
-  int commerce;
-  int happiness;
-  int health;
+  UnitAction unit_action;
+  Yields yields;
+};
+
+struct ImprovementBonus {
+  ImprovementName improvement;
+  Yields yields;
+};
+
+struct Bonus {
+  ResourceBonus resource_bonus;
+  ImprovementBonus improvement_bonus;
 };
 
 class ResourceDatabase {
  public:
-  static const ResourceBonus& get_info(ResourceName name) {
-    return _data.at(name);
-  }
+  static const Bonus& get_info(ResourceName name) { return _data.at(name); }
 
  private:
-  static const std::map<ResourceName, ResourceBonus> _data;
+  static std::map<ResourceName, Bonus> _data;
 };

@@ -34,8 +34,12 @@ class Unit {
    * spécifique. */
   bool find_terrain(const TerrainsType& target_terrain) const;
 
-  bool destroy_building_is_possible() const;
-  void destroy_building();
+  /** @brief Retourne une liste d'actions possibles que l'unité peut effectuer
+   */
+  virtual std::vector<UnitAction> get_unit_actions(const Unit* unit);
+
+  bool destroy_improvement_is_possible() const;
+  void destroy_improvement();
 
   bool is_military() const;
   UnitStats get_stats() const { return stats; }
