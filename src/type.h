@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+class Case;
+
 enum class TerrainsType {
   Coast,
   Desert,
@@ -88,18 +90,6 @@ enum class ImprovementName {
   Workshop           // Atelier
 };
 
-struct Yields {
-  int food = 0;
-  int production = 0;
-  int commerce = 0;
-  int culture = 0;
-  int science = 0;
-  int happiness = 0;
-  int health = 0;
-  int sickness = 0;
-  double defense = 0;
-};
-
 enum class Country {
   Neutral,
   France,
@@ -129,6 +119,18 @@ enum class Color {
 };
 
 extern const std::map<Country, Color> COUNTRY_COLOR;
+
+struct Yields {
+  int food = 0;
+  int production = 0;
+  int commerce = 0;
+  int culture = 0;
+  int science = 0;
+  int happiness = 0;
+  int health = 0;
+  int sickness = 0;
+  double defense = 0;
+};
 
 enum class UnitType {
   Air,
@@ -325,4 +327,9 @@ enum class UnitAction {
   // --- WorkBoat ---
   BuildFishingBoats,
   BuildWhalingBoats,
+};
+
+struct Course {
+  bool is_possible;
+  std::vector<Case*> distance_traveled;
 };

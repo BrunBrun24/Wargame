@@ -26,10 +26,6 @@ class Map {
   void add_unit_to_case(Case* target_case, const UnitName name,
                         Player* player) const;
 
-  /** @brief Ajoute un bâtiment sur la case */
-  void add_improvement_to_case(Case* target_case,
-                               const ImprovementName improvement) const;
-
   void create_map();
   void render_debug() const;
   void delete_player(Player* player);
@@ -57,10 +53,6 @@ class Map {
    * spécifique. */
   bool _is_resource_compatible(const ResourceName resource, int r, int c) const;
 
-  /** @brief Factory pour instancier le bon type d'unité (Aérienne, Terrestre,
-   * etc). */
-  Unit* _create_unit(const UnitName name, Player* player, Case* c) const;
-
   void _reset_map();
   void _generate_ocean();
   void _generate_plains();
@@ -70,6 +62,5 @@ class Map {
   void _generate_coasts();
   bool _try_place_players(std::vector<std::pair<int, int>>& spawn_points);
   void _generate_resources(const std::vector<std::pair<int, int>> spawn_points);
-
   int _get_continent_size(int const row, int const col) const;
 };

@@ -6,9 +6,7 @@
 #include <random>
 #include <unordered_set>
 
-#include "aerial.h"
-#include "maritime.h"
-#include "terrestrial.h"
+#include "units.h"
 
 Map::Map(int nb_player) {
   if (nb_player <= 2) {
@@ -49,7 +47,9 @@ Map::Map(int nb_player) {
 
 Map::~Map() {
   for (Player* p : _players) {
-    delete p;
+    if (p) {
+      delete p;
+    }
   }
   _players.clear();
 }
@@ -64,19 +64,10 @@ int Map::distance_between(const Coordinate c1, const Coordinate c2) const {
 
 void Map::add_unit_to_case(Case* target_case, const UnitName name,
                            Player* player) const {
-  Unit* new_unit = _create_unit(name, player, target_case);
+  Unit* new_unit = Unit::create_unit(name, player, target_case);
 
   // On ajoute l'unité sur la case
   target_case->add_unit(new_unit);
-
-  // On associe l'unité au joueur
-  player->add_unit(new_unit);
-}
-
-void Map::add_improvement_to_case(Case* target_case,
-                                  const ImprovementName improvement) const {
-  // On ajoute le batiment sur le terrain
-  target_case->get_terrain().improvement = improvement;
 }
 
 void Map::create_map() {
@@ -100,7 +91,6 @@ void Map::create_map() {
       _generate_resources(spawn_points);
       success = true;
     }
-    // Si success est false, la boucle recommence et _reset_map() nettoie tout
   }
 }
 
@@ -375,47 +365,19 @@ bool Map::_is_resource_compatible(const ResourceName resource, int r,
   }
 }
 
-Unit* Map::_create_unit(const UnitName name, Player* player, Case* c) const {
-  auto it = UNIT_TYPE.find(name);
-
-  if (it != UNIT_TYPE.end()) {
-    UnitType type = it->second;
-
-    switch (type) {
-      case UnitType::Air:
-      case UnitType::Missile:
-        return new Aerial(name, player, c);
-        break;
-
-      case UnitType::Naval:
-        return new Maritime(name, player, c);
-        break;
-
-      default:
-        return new Terrestrial(name, player, c);
-        break;
-    }
-  }
-
-  throw std::runtime_error("Le nom de l'unité n'existe pas dans UNIT_TYPE !");
-}
-
 void Map::_reset_map() {
-  for (int row = 0; row < _size_h; row++) {
-    for (int col = 0; col < _size_w; col++) {
-      // Supprime les unités proprement s'il y en a
-      for (Unit* u : _cases[row][col].get_units()) {
-        delete u;
-      }
-      // Réinitialise la case
-      _cases[row][col] = Case({TerrainsType::Ocean});
-      _cases[row][col].set_country(Country::Neutral);
-      _cases[row][col].set_player(nullptr);
-    }
+  // On demande aux joueurs de nettoyer leurs propres unités
+  for (Player* p : _players) {
+    if (p) p->clear_units();
   }
-  // Vide les listes de pointeurs des joueurs
-  for (auto* p : _players) {
-    p->clear_units();
+
+  // On nettoie les cases (Reset des pointeurs uniquement)
+  for (int r = 0; r < _size_h; r++) {
+    for (int c = 0; c < _size_w; c++) {
+      _cases[r][c].get_units().clear();  // On vide le vecteur de la case
+      _cases[r][c].set_player(nullptr);
+      _cases[r][c].set_city(nullptr);
+    }
   }
 }
 

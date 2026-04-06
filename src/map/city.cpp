@@ -5,6 +5,7 @@
 
 #include "case.h"
 #include "player.h"
+#include "units.h"
 
 const std::map<int, Culture> CITY_CULTURE = {
     {1, {10, 9}},    {2, {100, 21}},   {3, {500, 37}},
@@ -19,6 +20,7 @@ City::City(Case* city_case, Player* player)
       _happiness_limit(5),
       _player(player),
       _city_case(city_case) {
+  _player->add_city(this);
   // Appelez la méthode pour que l'utilisateur choisisse ce qu'il veut constrire
   // dans la ville
 }
@@ -138,6 +140,12 @@ void City::update_production() {
   if (element.accumulated >= element.cost) {
     // On regarde si la production concernait une unité ou un bâtiment
     if (element.unit != UnitName::None) {
+      Unit* new_unit = Unit::create_unit(element.unit, _player, _city_case);
+      _city_case->add_unit(new_unit);
+    } else {
+      // On ajoute le nouveau bâtiment à la ville
     }
+
+    // On demande au joueur la nouvelle production
   }
 }

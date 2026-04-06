@@ -72,7 +72,7 @@ class City {
   void set_player(Player* p) { _player = p; }
 
   Player* get_player() const { return _player; }
-  Case* get_case_city() const { return _city_case; }
+  Case* get_city_case() const { return _city_case; }
 
  private:
   static int _id_counter;

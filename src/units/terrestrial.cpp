@@ -11,7 +11,7 @@ Terrestrial::Terrestrial(UnitName name, Player* player, Case* case_unit)
             TerrainsType::Plains, TerrainsType::Tundra}) {}
 
 std::vector<UnitAction> Terrestrial::get_unit_actions(const Unit* unit) {
-  std::vector<UnitAction> available_actions = Unit::get_unit_actions(unit);
+  std::vector<UnitAction> available_actions = Unit::get_unit_actions();
   Case* unit_case = unit->get_case_unit();
   Terrain terrain = unit_case->get_terrain();
 

@@ -17,17 +17,36 @@ class Unit {
        std::vector<TerrainsType> allow_terrain);
   virtual ~Unit();
 
+  /** @brief Factory pour instancier le bon type d'unité (Aérienne, Terrestre,
+   * etc). */
+  static Unit* create_unit(const UnitName name, Player* player, Case* c);
   static std::vector<UnitName> get_all_units();
   static UnitName string_to_unit_name(const std::string& name);
   static StrengthWeaknessMatrix load_strength_weakness_matrix();
 
-  /** @brief Calcule les dégâts infligés à un ennemi. */
+  /** @brief Détermine si l'on peut atteindre la case en partant de l'unité */
+  Course can_move_to(const Case* target_case);
+
+  /** @brief Déplace l'unité sur la case */
+  void execute_movement(Case* target_case);
+
+  /** @brief Calcule les dégâts infligés à un ennemi */
   int calculate_damage(const Unit* ennemy) const;
 
   /** @brief Combat entre deux unités. */
   void fight(Unit* ennemy);
 
-  /** @brief Soigne l'unité de 20% de ses PV maximum. */
+  /**
+   * @brief Vérifie si l'unité peut fonder une ville sur sa case actuelle.
+   * @return true si l'unité est un colon et que l'emplacement respecte les
+   * règles de distance.
+   */
+  bool can_build_city() const;
+
+  /** @brief Fonde une ville, puis détruit l'unité colon */
+  void found_city();
+
+  /** @brief Soigne l'unité de 20% de ses PV maximum */
   void heal();
 
   /** @brief Vérifie si l'unité peut se déplacer sur un type de terrain
@@ -36,7 +55,7 @@ class Unit {
 
   /** @brief Retourne une liste d'actions possibles que l'unité peut effectuer
    */
-  virtual std::vector<UnitAction> get_unit_actions(const Unit* unit);
+  virtual std::vector<UnitAction> get_unit_actions();
 
   bool destroy_improvement_is_possible() const;
   void destroy_improvement();
@@ -73,4 +92,8 @@ class Unit {
 
  private:
   static int _id_counter;
+
+  /** @brief On capture les unités civiles et on déplace l'unité qui les a
+   * capturées */
+  void _handle_capture_and_move(Case* target_case);
 };

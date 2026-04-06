@@ -9,11 +9,6 @@ class Case;
 class Unit;
 class City;
 
-struct Course {
-  bool is_possible;
-  std::vector<Case*> distance_traveled;
-};
-
 struct Terrain {
   TerrainsType type = TerrainsType::Ocean;
   TerrainElevation elevation = TerrainElevation::Flat;
@@ -45,25 +40,18 @@ class Case {
        Player* player = nullptr);
   ~Case() = default;
 
-  /** @brief Détermine si l'on peut atteindre la case en partant de l'unité */
-  Course movement_is_possible(const Case* target_case, const Unit* unit);
-
-  /** @brief Déplace l'unité sur la case */
-  void movement(Case* target_case, Unit* unit_to_move);
-
   /** @return La meilleure unité de la case pour affronter l'ennemi */
-  Unit* select_best_unit(const Unit* ennemy) const;
+  Unit* select_best_unit(const Unit* unit) const;
 
-  /** @return Le chemin le plus court pour aller de la case actuelle à la case
-   * cible */
+  /** @return Le chemin le plus court pour aller à la case cible */
   Course distance_between(const Case* target_case);
 
-  /** @return Le chemin le plus court pour trouver le bâtiment le plus proche */
-  Course calculate_first_improvement_distance(
-      const ImprovementName improvement);
-
-  /** @return Le chemin le plus court pour trouver la ville la plus proche */
-  Course calculate_first_city_distance();
+  /**
+   * @brief Vérifie si une ville peut être construite ici (distance de 2 cases
+   * minimum).
+   */
+  bool is_valid_for_city() const;
+  void create_city(Player* player);
 
   /** @brief Calcule le rendement total de la case (Terrain + Ressource +
    * Amélioration) */
@@ -73,10 +61,12 @@ class Case {
   void add_unit(Unit* unit);
   void remove_unit(Unit* unit_to_move);
 
-  void add_neighbor(Case* neighbor);
+  /** @brief Ajoute un améanagement sur la case */
+  void add_improvement(const ImprovementName improvement) {
+    _terrain.improvement = improvement;
+  }
 
-  bool create_city_is_possible(const Case* target_case, const Unit* unit);
-  void create_city(Case* target_case, Unit* settler);
+  void add_neighbor(Case* neighbor);
 
   Country get_unit_country() const;
   std::string get_description() const;
@@ -107,8 +97,4 @@ class Case {
   City* _city;                    // Ville sur la case
   std::vector<Case*> _neighbors;  // Cases adjacentes
   std::vector<Unit*> _units;      // Unités sur la case
-
-  /** @brief On capture les unités civiles et on déplace l'unité qui les a
-   * capturées */
-  void _capture_and_displace(Case* target_case, Unit* unit_to_move);
 };

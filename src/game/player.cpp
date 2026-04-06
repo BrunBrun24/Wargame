@@ -13,19 +13,14 @@ int Player::_id_counter = 0;
 Player::Player(Country country) : _id(_id_counter++), _country(country) {}
 
 Player::~Player() {
-  // On vide les unités
-  for (Unit* u : _units) {
-    // On détache l'unité de la case AVANT de la supprimer pour éviter
-    // que le destructeur de l'unité ne tente de modifier un Player en cours de
-    // destruction.
-    u->set_unit_case(nullptr);
-    u->set_player(nullptr);
-    delete u;
+  // On utilise une boucle robuste pour les tests
+  while (!_units.empty()) {
+    Unit* u = _units.back();
+    delete u;  // Note: Le destructeur de Unit va appeler remove_unit
   }
 
-  for (City* c : _citys) {
-    c->set_city_case(nullptr);
-    c->set_player(nullptr);
+  while (!_citys.empty()) {
+    City* c = _citys.back();
     delete c;
   }
 }
@@ -78,18 +73,10 @@ Country Player::choice_country(const std::vector<Country>& excluded_countries) {
 }
 
 void Player::clear_units() {
-  for (Unit* unit : _units) {
-    if (unit != nullptr) {
-      // 1. On prévient la case que l'unité n'existe plus
-      if (unit->get_case_unit() != nullptr) {
-        unit->get_case_unit()->remove_unit(unit);
-      }
-      // 2. On libère la mémoire
-      delete unit;
-    }
+  while (!_units.empty()) {
+    Unit* u = _units.back();
+    delete u;  // Note: Le destructeur de Unit va appeler remove_unit
   }
-  // 3. On vide le vecteur d'adresses désormais invalides
-  _units.clear();
 }
 
 void Player::add_unit(Unit* unit) {
