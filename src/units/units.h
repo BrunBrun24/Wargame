@@ -36,16 +36,6 @@ class Unit {
   /** @brief Combat entre deux unités. */
   void fight(Unit* ennemy);
 
-  /**
-   * @brief Vérifie si l'unité peut fonder une ville sur sa case actuelle.
-   * @return true si l'unité est un colon et que l'emplacement respecte les
-   * règles de distance.
-   */
-  bool can_build_city() const;
-
-  /** @brief Fonde une ville, puis détruit l'unité colon */
-  void found_city();
-
   /** @brief Soigne l'unité de 20% de ses PV maximum */
   void heal();
 
@@ -57,13 +47,29 @@ class Unit {
    */
   virtual std::vector<UnitAction> get_unit_actions();
 
-  bool destroy_improvement_is_possible() const;
-  void destroy_improvement();
+  /**
+   * @brief Exécute une action spécifique demandée par l'utilisateur.
+   * @param action L'action UnitAction à effectuer.
+   */
+  void execute_action(const UnitAction action);
 
+  virtual void found_city();
+  virtual void chop_down_forest();
+  bool pillage_is_possible() const;
+  void pillage();
+  bool can_build_improvement(ImprovementName name);
+  void build_improvement(ImprovementName name);
   bool is_military() const;
   UnitStats get_stats() const { return stats; }
-  int get_movement() const { return stats.movement; }
   std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
+
+  int get_movement() const { return stats.movement; }
+  void set_PM(const double n) {
+    this->stats.PM = std::max(0.0, this->stats.PM - n);
+    if (this->stats.PM == 0) {
+      this->switch_active();
+    }
+  }
 
   int get_id() const { return id; }
   UnitName get_name() const { return name; }

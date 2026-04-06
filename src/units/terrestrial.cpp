@@ -38,3 +38,43 @@ std::vector<UnitAction> Terrestrial::get_unit_actions(const Unit* unit) {
 
   return available_actions;
 }
+
+bool Terrestrial::can_build_city() const {
+  // 1. Vérification du type d'unité
+  if (this->name != UnitName::Settler) {
+    return false;
+  }
+
+  // 2. On délègue la vérification de distance à la case
+  return this->case_unit->is_valid_for_city();
+}
+
+void Terrestrial::found_city() {
+  if (!can_build_city()) return;
+
+  // On demande à la case de générer la ville
+  this->case_unit->create_city(this->player);
+
+  // On supprime le colon
+  this->case_unit->remove_unit(this);
+
+  // On retire l'unité de la liste du joueur
+  this->player->remove_unit(this);
+
+  // On supprime l'unité
+  delete this;
+}
+
+bool Terrestrial::chop_down_forest_is_possible() {
+  if (this->get_name() != UnitName::Worker) return false;
+
+  TerrainFeature feature = this->get_case_unit()->get_terrain().feature;
+  return (feature == TerrainFeature::Forest ||
+          feature == TerrainFeature::Jungle);
+}
+
+void Terrestrial::chop_down_forest() {
+  this->get_case_unit()->get_terrain().feature = TerrainFeature::None;
+
+  this->switch_active();
+}

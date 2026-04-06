@@ -11,7 +11,9 @@
 
 #include "aerial.h"
 #include "case.h"
+#include "improvement_database.h"
 #include "maritime.h"
+#include "resource_database.h"
 #include "terrestrial.h"
 
 int Unit::_id_counter = 0;
@@ -135,57 +137,60 @@ StrengthWeaknessMatrix Unit::load_strength_weakness_matrix() {
 }
 
 Course Unit::can_move_to(const Case* target_case) {
-  // Si on est déjà sur la case cible
+  // 1. Cas d'arrêt immédiat : déjà sur la case
   if (this->case_unit == target_case) {
-    return {true, {this->case_unit}};
+    return {true, {this->case_unit}, 0.0};
   }
 
-  // On utilise les points de mouvement restants de l'unité
-  int max_mp = this->stats.movement;
+  // On utilise les points de mouvement restants (double)
+  double max_mp = this->stats.PM;
 
-  // File : <Case à explorer, Points de mouvement consommés pour y arriver>
-  std::queue<std::pair<Case*, int>> queue;
+  // File : <Case à explorer, PM consommés pour y arriver>
+  std::queue<std::pair<Case*, double>> queue;
   std::unordered_map<Case*, Case*> parent_map;
-  std::unordered_map<Case*, int> min_cost_map;
+  std::unordered_map<Case*, double> min_cost_map;
 
-  queue.push({this->case_unit, 0});
+  queue.push({this->case_unit, 0.0});
   parent_map[this->case_unit] = nullptr;
-  min_cost_map[this->case_unit] = 0;
+  min_cost_map[this->case_unit] = 0.0;
 
   Case* reached_target = nullptr;
+  double final_pm_cost = 0.0;
 
   while (!queue.empty()) {
     auto [current, current_cost] = queue.front();
     queue.pop();
 
+    // Si on a trouvé la cible
     if (current == target_case) {
-      // Une unité civile ne peut pas entrer sur une case ennemie occupée
+      // Vérification spécifique pour les unités civiles (pas de case ennemie
+      // occupée)
       if (!this->is_military() && !target_case->get_units().empty()) {
         if (target_case->get_units()[0]->get_player() != this->player) {
           continue;
         }
       }
       reached_target = current;
+      final_pm_cost = current_cost;
       break;
     }
 
     for (Case* neighbor : current->get_neighbors()) {
-      // 1. Vérification si le terrain est autorisé pour ce type d'unité
+      // Vérification du type de terrain autorisé (Terre/Mer/Air)
       if (!this->find_terrain(neighbor->get_terrain().type)) {
         continue;
       }
 
-      // 2. Calcul du coût pour entrer sur cette case
-      int move_cost = neighbor->get_terrain().calculate_move_cost();
-      int total_cost = current_cost + move_cost;
+      // Calcul du coût via la nouvelle méthode de Terrain
+      double move_cost = neighbor->get_terrain().calculate_PM();
+      double total_cost = current_cost + move_cost;
 
-      // 3. Si on dépasse les MP de l'unité, on ne peut pas aller sur ce voisin
+      // Vérification de la réserve de PM
       if (total_cost > max_mp) {
         continue;
       }
 
-      // 4. Si la case n'a pas été visitée OU si on a trouvé un chemin moins
-      // coûteux
+      // Mise à jour du chemin le plus court (Dijkstra simplifié)
       if (parent_map.find(neighbor) == parent_map.end() ||
           total_cost < min_cost_map[neighbor]) {
         parent_map[neighbor] = current;
@@ -195,7 +200,7 @@ Course Unit::can_move_to(const Case* target_case) {
     }
   }
 
-  // Reconstruction du chemin
+  // 2. Reconstruction du chemin si la cible a été atteinte
   if (reached_target) {
     std::vector<Case*> path;
     Case* backtrack = reached_target;
@@ -203,10 +208,11 @@ Course Unit::can_move_to(const Case* target_case) {
       path.insert(path.begin(), backtrack);
       backtrack = parent_map[backtrack];
     }
-    return {true, path};
+    // On retourne l'objet Course avec le coût PM calculé
+    return {true, path, final_pm_cost};
   }
 
-  return {false, {}};
+  return {false, {}, 0.0};
 }
 
 void Unit::execute_movement(Case* target_case) {
@@ -226,7 +232,9 @@ void Unit::execute_movement(Case* target_case) {
       target_case->get_country() == this->player->get_country()) {
     current_case->remove_unit(this);
     target_case->add_unit(this);
-    this->switch_active();
+
+    // On enlève les PM du parcours de l'unité
+    this->set_PM(course.PM);
     return;
   }
 
@@ -307,32 +315,6 @@ void Unit::fight(Unit* ennemy) {
   stats.hp -= calculate_damage(ennemy);
 }
 
-bool Unit::can_build_city() const {
-  // 1. Vérification du type d'unité
-  if (this->name != UnitName::Settler) {
-    return false;
-  }
-
-  // 2. On délègue la vérification de distance à la case
-  return this->case_unit->is_valid_for_city();
-}
-
-void Unit::found_city() {
-  if (!can_build_city()) return;
-
-  // On demande à la case de générer la ville
-  this->case_unit->create_city(this->player);
-
-  // On supprime le colon
-  this->case_unit->remove_unit(this);
-
-  // On retire l'unité de la liste du joueur
-  this->player->remove_unit(this);
-
-  // On supprime l'unité
-  delete this;
-}
-
 void Unit::heal() {
   int max_hp = UNIT_STATS.at(name).hp;
 
@@ -358,16 +340,152 @@ std::vector<UnitAction> Unit::get_unit_actions() {
   available_actions.push_back(UnitAction::RegroupUnit);
   available_actions.push_back(UnitAction::RegroupSameUnit);
 
+  if (this->on_guard) {
+    available_actions.push_back(UnitAction::Wake);
+  }
+
   return available_actions;
 }
 
-bool Unit::destroy_improvement_is_possible() const {
+void Unit::execute_action(UnitAction action) {
+  switch (action) {
+    // --- ACTIONS GÉNÉRALES ---
+    case UnitAction::SkipTurn:
+      this->switch_active();
+      break;
+
+    case UnitAction::Sleep:
+    case UnitAction::Wake:
+    case UnitAction::Fortify:
+    case UnitAction::UnFortify:
+      this->switch_on_guard();
+      this->switch_active();
+      break;
+
+    case UnitAction::Delete:
+      // On passe par le player pour une suppression sécurisée (vu nos fix
+      // précédents)
+      if (this->player) {
+        this->player->remove_unit(this);
+        delete this;
+      }
+      break;
+
+    case UnitAction::GoToMove:
+      break;
+
+    case UnitAction::RegroupUnit:
+      break;
+
+    case UnitAction::RegroupSameUnit:
+      break;
+
+    // --- ACTIONS MILITAIRES ---
+    case UnitAction::Pillage:
+      pillage();
+      break;
+
+    case UnitAction::Bombard:
+      break;
+
+    // --- ACTIONS NEUTRES ---
+    case UnitAction::BuildRoad:
+      break;
+
+    case UnitAction::BuildCity:
+      this->found_city();
+      break;
+
+    case UnitAction::BuildFarm:
+      this->build_improvement(ImprovementName::Farm);
+      break;
+
+    case UnitAction::BuildMine:
+      this->build_improvement(ImprovementName::Mine);
+      break;
+
+    case UnitAction::BuildCamp:
+      this->build_improvement(ImprovementName::Camp);
+      break;
+
+    case UnitAction::BuildCottage:
+      this->build_improvement(ImprovementName::Cottage);
+      break;
+
+    case UnitAction::BuildForestPreserve:
+      this->build_improvement(ImprovementName::ForestPreserve);
+      break;
+
+    case UnitAction::BuildPasture:
+      this->build_improvement(ImprovementName::Pasture);
+      break;
+
+    case UnitAction::BuildPlantation:
+      this->build_improvement(ImprovementName::Plantation);
+      break;
+
+    case UnitAction::BuildQuarry:
+      this->build_improvement(ImprovementName::Quarry);
+      break;
+
+    case UnitAction::BuildLumberMill:
+      this->build_improvement(ImprovementName::LumberMill);
+      break;
+
+    case UnitAction::ChopDownForest:
+      this->chop_down_forest();
+      break;
+
+    case UnitAction::BuildFishingBoats:
+      this->build_improvement(ImprovementName::FishingBoats);
+      break;
+
+    case UnitAction::BuildWatermill:
+      this->build_improvement(ImprovementName::Watermill);
+      break;
+
+    case UnitAction::BuildWell:
+      this->build_improvement(ImprovementName::Well);
+      break;
+
+    case UnitAction::BuildWorkshop:
+      this->build_improvement(ImprovementName::Workshop);
+      break;
+
+    case UnitAction::BuildWinery:
+      this->build_improvement(ImprovementName::Winery);
+      break;
+
+    case UnitAction::BuildWindmill:
+      this->build_improvement(ImprovementName::Windmill);
+      break;
+
+    case UnitAction::BuildWhalingBoats:
+      this->build_improvement(ImprovementName::WhalingBoats);
+      break;
+
+    case UnitAction::BuildOffshorePlatform:
+      this->build_improvement(ImprovementName::OffshorePlatform);
+      break;
+
+    case UnitAction::BuildFort:
+      this->build_improvement(ImprovementName::Fort);
+      break;
+
+    default:
+      std::cout << "[DEBUG] L'action " << static_cast<int>(action)
+                << " n'est pas encore implémentée pour " << id << std::endl;
+      break;
+  }
+}
+
+bool Unit::pillage_is_possible() const {
   // 1. L'unité est une troupe
   if (!is_military()) {
     return false;
   }
 
-  // 2. Un bâtiment est sur la case de l'unité ET le bâtiment doit-être
+  // 2. Un aménagement est sur la case de l'unité ET l'aménagement doit-être
   // différents du pays de l'unité
   if ((case_unit->get_terrain().improvement == ImprovementName::None) &&
       (case_unit->get_country() != player->get_country())) {
@@ -377,16 +495,63 @@ bool Unit::destroy_improvement_is_possible() const {
   return true;
 }
 
-void Unit::destroy_improvement() {
-  // 1. On détruit le bâtiment
-  case_unit->get_terrain().improvement = ImprovementName::None;
+void Unit::pillage() {
+  // 1. On récupère l'aménagement
+  ImprovementName& improvement = case_unit->get_terrain().improvement;
 
-  // 2. On dissocie le bâtiment du joueur
+  // 2. Le joueur récupère l'argent du pillage
+  this->player->get_income().gold +=
+      ImprovementDatabase::get_info(improvement).pillage;
+
+  // 3. On dissocie l'aménagement du joueur
   case_unit->get_player()->remove_improvement(case_unit);
-  case_unit->set_player(nullptr);
 
-  // 3. L'unité passe son tour
-  switch_active();
+  // 4. On détruit l'aménagement
+  improvement = ImprovementName::None;
+
+  // 4. On enlève les PMs à l'unité
+  set_PM(1);
+}
+
+bool Unit::can_build_improvement(ImprovementName name) {
+  // 1. Vérification du type d'unité
+  if (this->name != UnitName::Worker || this->name != UnitName::WorkBoat) {
+    return false;
+  }
+
+  // 2. On regarde s'il y a une ressource sur la case-
+  Terrain terrain = this->case_unit->get_terrain();
+  if (terrain.resource != ResourceName::None) {
+    const Bonus& bonus = ResourceDatabase::get_info(terrain.resource);
+
+    if (name == bonus.improvement_bonus.improvement) return true;
+  }
+
+  // 3. On regarde si le terrain est compatible avec l'aménagement
+  ImprovementData data = ImprovementDatabase::get_info(name);
+
+  // On commence par regarder les feature
+  for (TerrainFeature& feature : data.terrain_feature) {
+    if (feature == terrain.feature) return true;
+  }
+
+  // Ensuite l'élévation
+  for (TerrainElevation& elevation : data.terrain_elevation) {
+    if (elevation == terrain.elevation) return true;
+  }
+
+  // Puis le type
+  for (TerrainsType& type : data.terrain_type) {
+    if (type == terrain.type) return true;
+  }
+
+  return false;
+}
+
+void Unit::build_improvement(ImprovementName name) {
+  this->get_case_unit()->get_terrain().improvement = name;
+
+  this->switch_active();
 }
 
 bool Unit::is_military() const {

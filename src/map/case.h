@@ -25,7 +25,7 @@ struct Terrain {
    * @brief Calcule le coût en points de mouvement pour traverser ce terrain.
    * @return 2 si présence d'une feature ou d'une colline, 1 sinon.
    */
-  int calculate_move_cost() const {
+  double calculate_PM() const {
     if (feature != TerrainFeature::None ||
         elevation == TerrainElevation::Hill) {
       return 2;

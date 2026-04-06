@@ -276,7 +276,7 @@ struct UnitStats {
   int power = 0;
   int movement = 0;
   int production = 0;
-  int distance = 0;
+  double PM = 0;
 };
 
 extern const std::map<UnitName, UnitStats> UNIT_STATS;
@@ -285,14 +285,17 @@ extern const std::map<std::string, UnitName> UNIT_STRING_NAME;
 
 enum class UnitAction {
   // --- All ---
+  Sleep,
   SkipTurn,
   Delete,
+  Wake,
   GoToMove,
   RegroupUnit,
   RegroupSameUnit,
 
   // --- Unité Terrestre ---
-  Fortify,  // Mise en garde
+  Fortify,    // Mise en garde
+  UnFortify,  // Mise en garde
   Pillage,
   Bombard,  // Affaiblir les défenses d'une ville
 
@@ -300,7 +303,6 @@ enum class UnitAction {
   BuildCity,
 
   // --- Worker ---
-  RouteToMove,
   ChopDownForest,
   BuildRoad,
   BuildCamp,
@@ -309,15 +311,11 @@ enum class UnitAction {
   BuildMine,
   BuildForestPreserve,
   BuildFort,
-  BuildHamlet,
   BuildLumberMill,
   BuildOffshorePlatform,
   BuildPasture,
   BuildPlantation,
   BuildQuarry,
-  BuildTown,
-  BuildTribalVillage,
-  BuildVillage,
   BuildWatermill,
   BuildWell,
   BuildWindmill,
@@ -332,4 +330,5 @@ enum class UnitAction {
 struct Course {
   bool is_possible;
   std::vector<Case*> distance_traveled;
+  double PM;  // PM utilisé lors du trajet
 };
