@@ -274,14 +274,43 @@ enum class UnitName {
 struct UnitStats {
   int hp = 100;
   int power = 0;
-  int movement = 0;
-  int production = 0;
   double PM = 0;
+  int production = 0;
+  int distance = 0;
 };
 
 extern const std::map<UnitName, UnitStats> UNIT_STATS;
 extern const std::map<UnitName, UnitType> UNIT_TYPE;
 extern const std::map<std::string, UnitName> UNIT_STRING_NAME;
+
+struct PowerBonusUnitType {
+  UnitType type;
+  double attack = 0.0;  // force en plus en pourcentage
+};
+
+struct PowerBonusUnitName {
+  UnitName name;
+  double attack = 0.0;
+};
+
+struct PowerBonusTerrain {
+  TerrainElevation type;
+  double attack = 0.0;
+};
+
+struct PowerBonusCity {
+  double attack = 0.0;
+  double defense = 0.0;
+};
+
+struct PowerBonus {
+  std::vector<PowerBonusUnitType> units_types = {};
+  std::vector<PowerBonusUnitName> units_names = {};
+  std::vector<PowerBonusTerrain> terrain = {};
+  PowerBonusCity city = {};
+};
+
+extern const std::map<UnitName, PowerBonus> UNIT_POWER_BONUS;
 
 enum class UnitAction {
   // --- All ---

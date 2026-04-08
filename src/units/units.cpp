@@ -1,12 +1,9 @@
 #include "units.h"
 
 #include <algorithm>
-#include <fstream>
 #include <iostream>
 #include <queue>
-#include <sstream>
-#include <stdexcept>
-#include <string>
+#include <random>
 #include <unordered_map>
 
 #include "aerial.h"
@@ -71,69 +68,6 @@ std::vector<UnitName> Unit::get_all_units() {
     units.push_back(static_cast<UnitName>(i));
   }
   return units;
-}
-
-UnitName Unit::string_to_unit_name(const std::string& name) {
-  auto it = UNIT_STRING_NAME.find(name);
-  if (it != UNIT_STRING_NAME.end()) {
-    return it->second;
-  }
-  std::string error_msg =
-      "ERREUR FATALE : L'unite '" + name +
-      "' est introuvable dans le dictionnaire de correspondance. " +
-      "Verifiez l'orthographe dans le fichier CSV.";
-
-  throw std::runtime_error(error_msg);
-}
-
-StrengthWeaknessMatrix Unit::load_strength_weakness_matrix() {
-  StrengthWeaknessMatrix matrix;
-  std::ifstream file("../../src/files/csv/matrix_units_strength_weakness.csv");
-
-  if (!file.is_open()) {
-    std::cerr << "Impossible d'ouvrir le fichier CSV." << std::endl;
-    return matrix;
-  }
-
-  std::string line;
-  int line_count = 1;        // Pour le débug
-  std::getline(file, line);  // Ignore l'en-tête
-
-  // L'ordre des colonnes doit correspondre au vecteur statique
-  // _unit_type_order On suppose que l'ordre du CSV est le même que UnitName
-  std::vector<UnitName> all_units = get_all_units();
-
-  try {
-    while (std::getline(file, line)) {
-      std::stringstream ss(line);
-      std::string attacker_str;
-      std::getline(ss, attacker_str,
-                   ',');  // Récupérer le nom de l'attaquant (1ère colonne)
-
-      // Convertir le string en UnitName
-      UnitName attacker = string_to_unit_name(attacker_str);
-
-      std::string value_str;
-      int col_index = 0;
-      while (std::getline(ss, value_str, ',')) {
-        if (!value_str.empty()) {
-          double val = std::stod(value_str);
-          UnitName target = all_units[col_index];
-          matrix[attacker][target] = val;
-          col_index++;
-        }
-      }
-      line_count++;
-    }
-    return matrix;
-  } catch (const std::exception& e) {
-    std::cerr << "\n========================================" << std::endl;
-    std::cerr << "ERREUR DE CHARGEMENT (Ligne " << line_count << ")"
-              << std::endl;
-    std::cerr << e.what() << std::endl;
-    std::cerr << "========================================\n" << std::endl;
-    exit(1);
-  }
 }
 
 Course Unit::can_move_to(const Case* target_case) {
@@ -283,36 +217,102 @@ void Unit::execute_movement(Case* target_case) {
   }
 }
 
-int Unit::calculate_damage(const Unit* ennemy) const {
-  // Si l'unité est affaiblie, elle fait moins de dégâts
-  double percentage_hp_remaining =
-      static_cast<double>(stats.hp) / UNIT_STATS.at(this->get_name()).hp;
-  if (percentage_hp_remaining < 0.3) {
-    percentage_hp_remaining = 0.3;
+double Unit::get_modified_strength_vs(const Unit* opponent,
+                                      bool is_attacking) const {
+  // 1. Calcul de l'état de santé (Ratio HP actuel / HP Max)
+  double hp_ratio =
+      static_cast<double>(this->stats.hp) / UNIT_STATS.at(this->get_name()).hp;
+
+  // 2. Initialisation des bonus
+  double total_bonus = 0.0;
+  PowerBonus data = UNIT_POWER_BONUS.at(this->get_name());
+
+  // 3. Bonus du terrain
+  for (const auto& bt : data.terrain) {
+    if (this->get_case_unit()->get_terrain().elevation == bt.type) {
+      total_bonus += bt.attack;
+    }
   }
 
-  StrengthWeaknessMatrix unit_strength_weakness_matrix =
-      load_strength_weakness_matrix();
-
-  // Calcul des dégâts
-  double strength_weakness =
-      unit_strength_weakness_matrix.at(this->get_name()).at(ennemy->get_name());
-  double raw_damage =
-      stats.power * percentage_hp_remaining * (1.0 + strength_weakness);
-
-  // Si l'unité est en garde alors la puissance de l'attaque prend -30%
-  if (ennemy->is_on_guard()) {
-    raw_damage *= 0.7;
+  // 4. Bonus contre le type d'unité adverse
+  UnitType opponent_type = UNIT_TYPE.at(opponent->get_name());
+  for (const auto& b_type : data.units_types) {
+    if (b_type.type == opponent_type) {
+      total_bonus += b_type.attack;
+    }
   }
 
-  return static_cast<int>(raw_damage);
+  // 5. Bonus contre l'unité adverse spécifique
+  for (const auto& b_name : data.units_names) {
+    if (b_name.name == opponent->get_name()) {
+      total_bonus += b_name.attack;
+    }
+  }
+
+  // 6. Bonus de Ville
+  if (opponent->get_case_unit()->has_city() && is_attacking) {
+    total_bonus += data.city.attack;
+  } else if (this->get_case_unit()->has_city() && !is_attacking) {
+    total_bonus += data.city.defense;
+  }
+
+  // 7. Calcul final : Force * (1 + Somme des Bonus) * Ratio HP
+  return this->get_stats().power * (1.0 + total_bonus) * hp_ratio;
 }
 
-void Unit::fight(Unit* ennemy) {
-  // On attaque l'ennemie
-  ennemy->stats.hp -= calculate_damage(this);
-  // L'ennemie riposte
-  stats.hp -= calculate_damage(ennemy);
+bool Unit::predict_victory_chance(const Unit* defender) const {
+  // 1. Récupération des forces de l'attaquant et du défenseur
+  double attacker_strength = this->get_modified_attack_strength(defender);
+  double defender_strength = defender->get_modified_defense_strength(this);
+
+  // 2. On calcule la probabilité pour que l'attaquant gagne
+  double win_probability =
+      attacker_strength / (attacker_strength + defender_strength);
+
+  // 3. Génération d'un nombre aléatoire entre 0.0 et 1.0
+  static std::mt19937 generator(static_cast<unsigned int>(std::time(nullptr)));
+  std::uniform_real_distribution<double> distribution(0.0, 1.0);
+
+  double dice_roll = distribution(generator);
+
+  // 4. Résultat du combat
+  if (dice_roll <= win_probability) {
+    // L'attaquant a gagné !
+    return true;
+  } else {
+    // Le défenseur a gagné !
+    return false;
+  }
+}
+
+int Unit::calculate_survivor_damage(const Unit* defender) const {
+  // 1. Récupération des forces de l'attaquant et du défenseur
+  double winner_power = this->get_modified_attack_strength(defender);
+  double loser_power = defender->get_modified_defense_strength(this);
+
+  // 2. On calcule le ratio
+  double ratio = loser_power / winner_power;
+
+  // 3. Dégâts de base (par exemple 20 PV maximum pour un combat équilibré)
+  const int BASE_DAMAGE = 20;
+
+  // 4. Calcul final : Dégâts = Base * Ratio
+  int damage = static_cast<int>(std::round(BASE_DAMAGE * ratio));
+
+  // Le vainqueur perd au moins 1 PV
+  return std::max(1, damage);
+}
+
+void Unit::fight(Unit* defender) {
+  if (predict_victory_chance(defender)) {
+    // L'attaquant à gagné
+    defender->stats.hp = 0;
+    this->stats.hp -= calculate_survivor_damage(defender);
+  } else {
+    // Le défenseur à gagné
+    this->stats.hp = 0;
+    defender->stats.hp -= calculate_survivor_damage(defender);
+  }
 }
 
 void Unit::heal() {

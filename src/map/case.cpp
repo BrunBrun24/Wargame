@@ -25,10 +25,10 @@ Case::Case(Terrain terrain, Country country, Player* player)
 
 Unit* Case::select_best_unit(const Unit* unit) const {
   Unit* best_unit = nullptr;
-  int damage = 0;
+  double damage = 0;
 
   for (auto* u : _units) {
-    int potential_damage = u->calculate_damage(unit);
+    double potential_damage = u->get_modified_strength_vs(unit, false);
     if (potential_damage > damage) {
       damage = potential_damage;
       best_unit = u;
@@ -107,11 +107,15 @@ Yields Case::get_total_yields() const {
   // 1. Rendement de la case
   Yields total = get_base_yields();
 
-  if ((_terrain.elevation == TerrainElevation::Hill) &&
-      (_terrain.feature == TerrainFeature::Forest)) {
+  if (_terrain.elevation == TerrainElevation::Hill) {
     total.production += 1;
-  } else if (_terrain.feature == TerrainFeature::Forest) {
+  }
+
+  if (_terrain.feature == TerrainFeature::Forest) {
+    total.health += 1;
+  } else if (_terrain.feature == TerrainFeature::Jungle) {
     total.production -= 1;
+    total.sickness += 1;
   }
 
   // 2. Bonus des ressources et des aménagements

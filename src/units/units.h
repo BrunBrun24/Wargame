@@ -9,8 +9,6 @@
 
 class Case;
 
-using StrengthWeaknessMatrix = std::map<UnitName, std::map<UnitName, double>>;
-
 class Unit {
  public:
   Unit(UnitName name, Player* player, Case* case_unit,
@@ -21,8 +19,6 @@ class Unit {
    * etc). */
   static Unit* create_unit(const UnitName name, Player* player, Case* c);
   static std::vector<UnitName> get_all_units();
-  static UnitName string_to_unit_name(const std::string& name);
-  static StrengthWeaknessMatrix load_strength_weakness_matrix();
 
   /** @brief Détermine si l'on peut atteindre la case en partant de l'unité */
   Course can_move_to(const Case* target_case);
@@ -30,11 +26,46 @@ class Unit {
   /** @brief Déplace l'unité sur la case */
   void execute_movement(Case* target_case);
 
-  /** @brief Calcule les dégâts infligés à un ennemi */
-  int calculate_damage(const Unit* ennemy) const;
+  /** @brief Logique commune de calcul de force modifiée */
+  double get_modified_strength_vs(const Unit* opponent,
+                                  bool is_attacking) const;
+
+  /** * @brief Estime les chances de victoire de l'unité lors d'un assaut.
+   * @param defender L'unité cible.
+   * @return Boléen retournant si true si l'attaquant gagne et false sinon
+   */
+  bool predict_victory_chance(const Unit* defender) const;
+
+  /** * @brief Calcule la force de combat modifiée de l'attaquant contre un
+   * défenseur spécifique.
+   * @param defender L'unité qui subit l'attaque.
+   * @return La puissance d'attaque finale après application de tous les bonus
+   * (terrain, type, etc.).
+   */
+  double get_modified_attack_strength(const Unit* defender) const {
+    return get_modified_strength_vs(defender, true);
+  }
+
+  /** * @brief Calcule la force de combat modifiée du défenseur contre cette
+   * unité.
+   * @param attacker L'unité qui initie l'attaque.
+   * @return La puissance de défense finale après application des bonus de
+   * terrain et de ville.
+   */
+  double get_modified_defense_strength(const Unit* attacker) const {
+    return get_modified_strength_vs(attacker, false);
+  }
+
+  /**
+   * @brief Calcule les dégâts subis par le vainqueur après un combat.
+   * @param winner_power Puissance totale du vainqueur.
+   * @param loser_power Puissance totale du perdant.
+   * @return Le nombre de PV à retirer au vainqueur.
+   */
+  int calculate_survivor_damage(const Unit* defender) const;
 
   /** @brief Combat entre deux unités. */
-  void fight(Unit* ennemy);
+  void fight(Unit* defender);
 
   /** @brief Soigne l'unité de 20% de ses PV maximum */
   void heal();
@@ -53,8 +84,8 @@ class Unit {
    */
   void execute_action(const UnitAction action);
 
-  virtual void found_city();
-  virtual void chop_down_forest();
+  virtual void found_city() {};
+  virtual void chop_down_forest() {};
   bool pillage_is_possible() const;
   void pillage();
   bool can_build_improvement(ImprovementName name);
@@ -63,7 +94,6 @@ class Unit {
   UnitStats get_stats() const { return stats; }
   std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
 
-  int get_movement() const { return stats.movement; }
   void set_PM(const double n) {
     this->stats.PM = std::max(0.0, this->stats.PM - n);
     if (this->stats.PM == 0) {

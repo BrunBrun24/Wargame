@@ -30,6 +30,8 @@ struct CityData {
   int production_yield = 0;
   int commerce_yield = 0;
   int science_yield = 0;
+  int health_yield = 2;  // De base toute les villes ont deux de santé
+  int happiness_yield = 0;
   int population = 0;
 
   /** @brief Calcule le seuil de nourriture nécessaire pour le prochain citoyen
@@ -78,8 +80,6 @@ class City {
   static int _id_counter;
 
   int _id;
-  int _health_limit;
-  int _happiness_limit;
   CityData _data;
   std::queue<ProductionOrder> _build_queue;
   Player* _player;

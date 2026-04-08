@@ -15,11 +15,7 @@ const std::map<int, Culture> CITY_CULTURE = {
 int City::_id_counter = 0;
 
 City::City(Case* city_case, Player* player)
-    : _id(_id_counter++),
-      _health_limit(5),
-      _happiness_limit(5),
-      _player(player),
-      _city_case(city_case) {
+    : _id(_id_counter++), _player(player), _city_case(city_case) {
   _player->add_city(this);
   // Appelez la méthode pour que l'utilisateur choisisse ce qu'il veut constrire
   // dans la ville
@@ -81,11 +77,11 @@ Yields City::calculate_yields() const {
   }
 
   // 4. Rendement du centre-ville (Minimum 2 Food, 1 Prod, 1 Commerce)
+  total.food += 2;
+  total.production += 1;
+  total.commerce += 1;
+
   if (is_capital()) {
-    total.food += 2;
-    total.production += 1;
-    total.commerce += 1;
-  } else {
     total.happiness += 1;
     total.commerce += 8;
     total.culture += 1;
@@ -114,8 +110,8 @@ void City::update_food() {
 
   // 2. Malus de santé
   // Si pop > limite santé, chaque point au-dessus consomme 1 nourriture de plus
-  if (_data.population > _health_limit) {
-    consumption += (_data.population - _health_limit);
+  if (_data.population > _data.health_yield) {
+    consumption += (_data.population - _data.health_yield);
   }
 
   _data.food.accumulated += (_data.food.yield - consumption);

@@ -26,7 +26,8 @@ struct Terrain {
    * @return 2 si présence d'une feature ou d'une colline, 1 sinon.
    */
   double calculate_PM() const {
-    if (feature != TerrainFeature::None ||
+    if (feature != TerrainFeature::Forest ||
+        feature != TerrainFeature::Jungle ||
         elevation == TerrainElevation::Hill) {
       return 2;
     }
@@ -83,6 +84,7 @@ class Case {
 
   City* get_city() const { return _city; }
   void set_city(City* city) { _city = city; }
+  bool has_city() { return (_city != nullptr); }
 
   std::vector<Case*> get_neighbors() const { return _neighbors; }
   std::vector<Unit*> get_units() const { return _units; }

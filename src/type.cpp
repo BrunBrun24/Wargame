@@ -376,3 +376,83 @@ const std::map<std::string, UnitName> UNIT_STRING_NAME = {
     // Recon
     {"Scout", UnitName::Scout},
     {"Explorer", UnitName::Explorer}};
+
+const std::map<UnitName, PowerBonus> UNIT_POWER_BONUS = {
+    {UnitName::Warrior, {{}, {}, {}, {0.0, 0.25}}},
+    {UnitName::Spearman, {{{UnitType::Mounted, 1.0}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Axeman, {{{UnitType::Melee, 0.5}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Swordsman, {{}, {}, {}, {0.10, 0.0}}},
+    {UnitName::Pikeman, {{{UnitType::Mounted, 1.0}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Maceman, {{{UnitType::Melee, 0.5}}, {}, {}, {0.0, 0.0}}},
+
+    {UnitName::Archer, {{}, {}, {{TerrainElevation::Hill, 0.25}}, {0.0, 0.50}}},
+    {UnitName::Longbowman,
+     {{}, {}, {{TerrainElevation::Hill, 0.25}}, {0.0, 0.50}}},
+    {UnitName::Crossbowman, {{{UnitType::Melee, 0.5}}, {}, {}, {0.0, 0.0}}},
+
+    {UnitName::Musketman, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Grenadier, {{}, {{UnitName::Rifleman, 0.5}}, {}, {0.0, 0.0}}},
+    {UnitName::Rifleman, {{{UnitType::Mounted, 0.25}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::AntiTank, {{{UnitType::Armored, 1.0}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::MachineGun, {{{UnitType::Gunpowder, 0.5}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::SAMInfantry,
+     {{{UnitType::Helicopter, 0.75}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Infantry, {{{UnitType::Gunpowder, 0.25}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::MobileSAM, {{{UnitType::Helicopter, 0.50}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Marine,
+     {{{UnitType::Siege, 0.50}},
+      {{UnitName::MachineGun, 0.5}},
+      {},
+      {0.0, 0.0}}},
+    {UnitName::Paratrooper, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::MechanizedInfantry, {{}, {}, {}, {0.0, 0.0}}},
+
+    {UnitName::Chariot, {{}, {{UnitName::Axeman, 1.0}}, {}, {0.0, 0.0}}},
+    {UnitName::HorseArcher, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::WarElephant, {{{UnitType::Mounted, 0.5}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Knight, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Cuirassier, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Cavalry, {{}, {{UnitName::Cannon, 0.5}}, {}, {0.0, 0.0}}},
+
+    {UnitName::Gunship, {{{UnitType::Armored, 1.0}}, {}, {}, {0.0, 0.0}}},
+
+    {UnitName::Catapult, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Trebuchet, {{}, {}, {}, {1.0, 0.0}}},
+    {UnitName::Cannon, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Artillery, {{{UnitType::Siege, 0.5}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::MobileArtillery, {{{UnitType::Siege, 0.5}}, {}, {}, {0.0, 0.0}}},
+
+    {UnitName::Tank, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::ModernArmor, {{}, {}, {}, {0.0, 0.0}}},
+
+    {UnitName::Scout, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Explorer, {{}, {}, {}, {0.0, 0.0}}},
+
+    {UnitName::Galley, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Trireme, {{}, {{UnitName::Galley, 0.5}}, {}, {0.0, 0.0}}},
+    {UnitName::Caravel, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Galleon, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Privateer, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Frigate, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::ShipOfTheLine, {{}, {{UnitName::Frigate, 0.5}}, {}, {0.0, 0.0}}},
+    {UnitName::Ironclad, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Transport, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Destroyer, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Battleship, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Submarine, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::AttackSubmarine,
+     {{}, {{UnitName::Submarine, 0.5}}, {}, {0.0, 0.0}}},
+    {UnitName::MissileCruiser, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::StealthDestroyer, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Carrier, {{}, {}, {}, {0.0, 0.0}}},
+
+    {UnitName::Airship, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Fighter, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::JetFighter, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::Bomber, {{{UnitType::Naval, -0.5}}, {}, {}, {0.0, 0.0}}},
+    {UnitName::StealthBomber, {{{UnitType::Naval, -0.5}}, {}, {}, {0.0, 0.0}}},
+
+    {UnitName::GuidedMissile, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::TacticalNuke, {{}, {}, {}, {0.0, 0.0}}},
+    {UnitName::ICBM, {{}, {}, {}, {0.0, 0.0}}},
+};

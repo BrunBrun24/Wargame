@@ -18,8 +18,8 @@ class Terrestrial : public Unit {
   bool can_build_city() const;
 
   /** @brief Fonde une ville, puis détruit l'unité colon */
-  void found_city();
-  
+  void found_city() override;
+
   bool chop_down_forest_is_possible();
-  void chop_down_forest();
+  void chop_down_forest() override;
 };
