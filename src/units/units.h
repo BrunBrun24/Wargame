@@ -67,7 +67,7 @@ class Unit {
   /** @brief Combat entre deux unités. */
   void fight(Unit* defender);
 
-  /** @brief Soigne l'unité de 20% de ses PV maximum */
+  /** @brief Soigne l'unité */
   void heal();
 
   /** @brief Vérifie si l'unité peut se déplacer sur un type de terrain

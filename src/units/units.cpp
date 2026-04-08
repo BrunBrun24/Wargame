@@ -318,10 +318,24 @@ void Unit::fight(Unit* defender) {
 void Unit::heal() {
   int max_hp = UNIT_STATS.at(name).hp;
 
-  if (stats.hp < max_hp) {
-    int amount_to_heal = static_cast<int>(max_hp * 0.2);
+  // Si l'unité est en garde et blessée
+  if (this->is_on_guard() && this->stats.hp < max_hp) {
+    int amount_to_heal = 0;
+    // On regarde à quel joueur appartient la case où se trouve l'unité
+    const Player* player = this->get_case_unit()->get_player();
 
-    stats.hp = std::min<int>(stats.hp + amount_to_heal, max_hp);
+    if (player == this->get_player()) {
+      // Territoire allié : 30%
+      int amount_to_heal = static_cast<int>(max_hp * 0.3);
+    } else if (player == nullptr) {
+      // Territoire neutre : 20%
+      int amount_to_heal = static_cast<int>(max_hp * 0.2);
+    } else {
+      // Territoire ennemi : 10%
+      int amount_to_heal = static_cast<int>(max_hp * 0.1);
+    }
+
+    this->stats.hp = std::min<int>(this->stats.hp + amount_to_heal, max_hp);
   }
 }
 
