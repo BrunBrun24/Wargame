@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "player.h"
-#include "type.h"
+#include "../type.h"
 
 class Case;
 

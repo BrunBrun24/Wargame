@@ -1,4 +1,5 @@
 #include "Mainmenu.h"
+
 #include <QImage>
 #include <QDebug>
 #include <cmath>
@@ -60,8 +61,10 @@ void Mainmenu::paintGL()
     glClear(GL_COLOR_BUFFER_BIT);
     float gris = int_color_into_float_color(196);
     QStringList labels = { "Nouvelle Partie", "Continuer", "Options" };
-    //faut garder toujours une des 
-    //deux coordonnées la même pour un rectangle
+    /*faut garder toujours une des 
+      deux coordonnées la même pour un rectangle
+        par exemple (A B 0) => (C B 0) => (C D 0) => (A D 0)
+      */
     
     std::vector<std::vector<float>> grid = {
             { -0.6f, +0.8f, 0.0f,
@@ -85,7 +88,7 @@ void Mainmenu::paintGL()
     if (texture) {
         texture->bind();
 
-        // Quad couvrant tout l'écran
+        // Quad couvrant tout l'écran (qui vas afficher toute l'image)
         glBegin(GL_QUADS);
             glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
             glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);
@@ -104,7 +107,19 @@ void Mainmenu::paintGL()
             glVertex3f(rect[j], rect[j + 1], rect[j + 2]);
         }
         glEnd();
+        
     }    
+    glColor3f(0.0f,0.0f,0.0f);
+    glLineWidth(2.0f);
+    for (size_t i = 0; i < grid.size(); ++i) {
+        const std::vector<float>& rect = grid[i];
+        glBegin(GL_LINE_LOOP);
+            for (size_t j = 0; j < rect.size(); j += 3) {
+                glVertex3f(rect[j], rect[j + 1], rect[j + 2]);
+            }
+        glEnd();
+    }
+    // partie de texte, faut que je comprenne comment cela fonctionne.
     QPainter painter(this);
     painter.setPen(Qt::black);
     painter.setFont(QFont("Arial", 18));
@@ -130,3 +145,31 @@ void Mainmenu::paintGL()
     
 }
 
+void Mainmenu::mousePressEvent(QMouseEvent *event){
+    int x = event->position().x();
+    int y = event->position().y();
+    QString xStr = QString::number(x);
+    QString yStr = QString::number(y);
+    qDebug() << xStr << " , " << yStr << "\n";
+    //traduction en OPENGL float
+
+    int h = height();
+    int w = width();
+
+    float xGL = (2.0f * x / w) - 1.0f; // on fais 2 * x, puis divisé par w. on enlève 1 car sinon on est en dehors.
+    float yGL = 1.0f - (2.0f * y / h);
+    qDebug() << xGL << " , " << yGL << "\n";
+    //Borders width of the rectangles (static borders, always the same)
+    if((xGL <= 0.6f) && (xGL >= -0.6f)){
+        if((yGL <= 0.8f) && (yGL >= 0.4f))
+            qDebug() << "Nouvelle Partie" << "\n";
+        else{
+            if((yGL <= 0.2f) && (yGL >= -0.2f))
+                qDebug() << "Continuer Partie" << "\n";
+            else{
+                if((yGL <= -0.4f) && (yGL >= -0.8f))
+                    qDebug() << "Options" << "\n";
+            }
+        }
+    }
+}

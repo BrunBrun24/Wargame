@@ -1,7 +1,7 @@
 #include <queue>
 #include <string>
 
-#include "type.h"
+#include "../type.h"
 
 class Case;
 class Player;

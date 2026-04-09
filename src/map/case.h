@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "type.h"
+#include "../type.h"
 
 class Player;
 class Case;
