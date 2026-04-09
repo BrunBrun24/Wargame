@@ -66,6 +66,7 @@ enum class ResourceName {
 
 enum class ImprovementName {
   None,
+  Road,              // Route
   Camp,              // Camp
   Cottage,           // Cottage
   Farm,              // Ferme
@@ -313,6 +314,8 @@ struct PowerBonus {
 extern const std::map<UnitName, PowerBonus> UNIT_POWER_BONUS;
 
 enum class UnitAction {
+  None,
+
   // --- All ---
   Sleep,
   SkipTurn,

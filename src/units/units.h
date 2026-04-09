@@ -9,6 +9,12 @@
 
 class Case;
 
+struct OrderRequest {
+  UnitAction action = UnitAction::None;  // Action à effectuer
+  int turns = 0;  // Nombre de Tours qui reste à effectuer pour les aménagements
+  Case* target = nullptr;  // Case cible pour le déplacement
+};
+
 class Unit {
  public:
   Unit(UnitName name, Player* player, Case* case_unit,
@@ -19,12 +25,17 @@ class Unit {
    * etc). */
   static Unit* create_unit(const UnitName name, Player* player, Case* c);
   static std::vector<UnitName> get_all_units();
+  static ImprovementName action_to_improvement(UnitAction action);
 
   /** @brief Détermine si l'on peut atteindre la case en partant de l'unité */
   Course can_move_to(const Case* target_case);
 
   /** @brief Déplace l'unité sur la case */
-  void execute_movement(Case* target_case);
+  void execute_movement(Course course);
+
+  /** @brief Evalue sur quelle case faut il déplacer l'unité et s'il faut oui ou
+   * non ajouter des ordres dans la file d'attente */
+  void go_to_move(Case* target_case);
 
   /** @brief Logique commune de calcul de force modifiée */
   double get_modified_strength_vs(const Unit* opponent,
@@ -78,11 +89,15 @@ class Unit {
    */
   virtual std::vector<UnitAction> get_unit_actions();
 
-  /**
-   * @brief Exécute une action spécifique demandée par l'utilisateur.
-   * @param action L'action UnitAction à effectuer.
-   */
+  /** @brief Récupère l'ordre donné par l'utilisateur et si elle est réalisable
+   * pour ce tour alors l'exécuter sinon la mettre dans la file d'attente. */
+  void get_order(UnitAction action, Case* target_case = nullptr);
+
+  /** @brief Applique immédiatement les effets d'une action sur le jeu. */
   void execute_action(const UnitAction action);
+
+  /** @brief Gère la progression de la file d'ordres au fil des tours. */
+  void execute_orders();
 
   virtual void found_city() {};
   virtual void chop_down_forest() {};
@@ -122,6 +137,7 @@ class Unit {
   Player* player;
   Case* case_unit;
   UnitStats stats;
+  OrderRequest orders;
   std::vector<TerrainsType> allow_terrain;
   bool active;    // L'unité en attente d'ordre
   bool on_guard;  // L'unité se protège

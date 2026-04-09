@@ -22,6 +22,7 @@ Unit::Unit(UnitName name, Player* player, Case* case_unit,
       player(player),
       case_unit(case_unit),
       stats(UNIT_STATS.at(name)),
+      orders({UnitAction::None, 0, nullptr}),
       allow_terrain(allow_terrain),
       active(true),
       on_guard(false) {
@@ -70,6 +71,52 @@ std::vector<UnitName> Unit::get_all_units() {
   return units;
 }
 
+ImprovementName Unit::action_to_improvement(UnitAction action) {
+  switch (action) {
+    case UnitAction::BuildRoad:
+      return ImprovementName::Road;
+    case UnitAction::BuildFarm:
+      return ImprovementName::Farm;
+    case UnitAction::BuildMine:
+      return ImprovementName::Mine;
+    case UnitAction::BuildCamp:
+      return ImprovementName::Camp;
+    case UnitAction::BuildCottage:
+      return ImprovementName::Cottage;
+    case UnitAction::BuildForestPreserve:
+      return ImprovementName::ForestPreserve;
+    case UnitAction::BuildPasture:
+      return ImprovementName::Pasture;
+    case UnitAction::BuildPlantation:
+      return ImprovementName::Plantation;
+    case UnitAction::BuildQuarry:
+      return ImprovementName::Quarry;
+    case UnitAction::BuildLumberMill:
+      return ImprovementName::LumberMill;
+    case UnitAction::BuildFishingBoats:
+      return ImprovementName::FishingBoats;
+    case UnitAction::BuildWatermill:
+      return ImprovementName::Watermill;
+    case UnitAction::BuildWell:
+      return ImprovementName::Well;
+    case UnitAction::BuildWorkshop:
+      return ImprovementName::Workshop;
+    case UnitAction::BuildWinery:
+      return ImprovementName::Winery;
+    case UnitAction::BuildWindmill:
+      return ImprovementName::Windmill;
+    case UnitAction::BuildWhalingBoats:
+      return ImprovementName::WhalingBoats;
+    case UnitAction::BuildOffshorePlatform:
+      return ImprovementName::OffshorePlatform;
+    case UnitAction::BuildFort:
+      return ImprovementName::Fort;
+
+    default:
+      return ImprovementName::None;
+  }
+}
+
 Course Unit::can_move_to(const Case* target_case) {
   // 1. Cas d'arrêt immédiat : déjà sur la case
   if (this->case_unit == target_case) {
@@ -107,6 +154,14 @@ Course Unit::can_move_to(const Case* target_case) {
       reached_target = current;
       final_pm_cost = current_cost;
       break;
+    } else {
+      // Sinon si sur le chemin il y a une unité militaire ennemie
+      // On ne peut pas passer par là
+      if (!target_case->get_units().empty()) {
+        if (target_case->get_units()[0]->get_player() != this->player) {
+          continue;
+        }
+      }
     }
 
     for (Case* neighbor : current->get_neighbors()) {
@@ -138,10 +193,13 @@ Course Unit::can_move_to(const Case* target_case) {
   if (reached_target) {
     std::vector<Case*> path;
     Case* backtrack = reached_target;
+
+    // On remonte la chaîne des parents
     while (backtrack != nullptr) {
       path.insert(path.begin(), backtrack);
       backtrack = parent_map[backtrack];
     }
+
     // On retourne l'objet Course avec le coût PM calculé
     return {true, path, final_pm_cost};
   }
@@ -149,12 +207,8 @@ Course Unit::can_move_to(const Case* target_case) {
   return {false, {}, 0.0};
 }
 
-void Unit::execute_movement(Case* target_case) {
-  // On regarde si le mouvement est possible
-  Course course = this->can_move_to(target_case);
-  if (!course.is_possible || course.distance_traveled.size() < 2) {
-    return;
-  }
+void Unit::execute_movement(Course course) {
+  Case* target_case = course.distance_traveled.back();
 
   // Case de repli (l'avant-dernière case du chemin parcouru)
   Case* backtrack_case =
@@ -175,11 +229,9 @@ void Unit::execute_movement(Case* target_case) {
   // Cas 2 : Un ennemi est présent
   Unit* best_defender = target_case->select_best_unit(this);
 
-  // Si le défenseur n'est pas militaire (civil), capture immédiate
+  // Si le défenseur n'est pas militaire, capture immédiate
   if (!best_defender->is_military()) {
     current_case->remove_unit(this);
-    // La méthode _capture_and_displace doit être accessible ou logique déplacée
-    // ici
     this->_handle_capture_and_move(target_case);
   } else {
     // Sinon, déclenchement du combat
@@ -188,10 +240,8 @@ void Unit::execute_movement(Case* target_case) {
     // Si le défenseur succombe
     if (best_defender->get_stats().hp <= 0) {
       delete best_defender;
-    }
 
-    // Si l'attaquant est toujours en vie
-    if (this->get_stats().hp > 0) {
+      // On retire l'attaquant de sa case actuelle
       current_case->remove_unit(this);
 
       // On vérifie si la case est libérée après le combat
@@ -204,7 +254,7 @@ void Unit::execute_movement(Case* target_case) {
         if (!next_defender->is_military()) {
           this->_handle_capture_and_move(target_case);
         } else {
-          // Sinon, on reste sur la case de repli (le combat a consommé le tour)
+          // Sinon, on reste sur la case de repli
           backtrack_case->add_unit(this);
         }
       }
@@ -214,6 +264,37 @@ void Unit::execute_movement(Case* target_case) {
       current_case->remove_unit(this);
       delete this;
     }
+  }
+}
+
+void Unit::go_to_move(Case* target_case) {
+  Course course = can_move_to(target_case);
+  // On vérifie si le chemin est toujours atteignable
+  if (course.is_possible) {
+    // On vérifie si l'unité peut y aller en un seul tour
+    double unit_PM = this->stats.PM;
+    if (course.distance_traveled.size() < unit_PM) {
+      // Si oui alors on déplace l'unité
+      execute_movement(course);
+    } else {
+      // Sinon on le déplace sur la case la plus loin possible selon ses PMs
+      // On construit le chemin juqu'où l'unité peut aller
+      Course first_movement = {true, {}, 0};
+      for (int c = 0; c < unit_PM; c++) {
+        first_movement.distance_traveled.push_back(
+            course.distance_traveled.at(c));
+        first_movement.PM = course.PM;
+      }
+
+      // On le déplace
+      execute_movement(first_movement);
+
+      // On ajoute la case cible dans les ordres à effectuer
+      this->orders = {UnitAction::GoToMove, 0, course.distance_traveled.back()};
+    }
+  } else {
+    // Si le chemin n'est plus atteignable alors on enlève les ordres
+    this->orders = {};
   }
 }
 
@@ -361,9 +442,8 @@ std::vector<UnitAction> Unit::get_unit_actions() {
   return available_actions;
 }
 
-void Unit::execute_action(UnitAction action) {
+void Unit::get_order(UnitAction action, Case* target_case) {
   switch (action) {
-    // --- ACTIONS GÉNÉRALES ---
     case UnitAction::SkipTurn:
       this->switch_active();
       break;
@@ -377,15 +457,14 @@ void Unit::execute_action(UnitAction action) {
       break;
 
     case UnitAction::Delete:
-      // On passe par le player pour une suppression sécurisée (vu nos fix
-      // précédents)
       if (this->player) {
-        this->player->remove_unit(this);
+        this->get_player()->remove_unit(this);
         delete this;
       }
       break;
 
     case UnitAction::GoToMove:
+      go_to_move(target_case);
       break;
 
     case UnitAction::RegroupUnit:
@@ -394,7 +473,6 @@ void Unit::execute_action(UnitAction action) {
     case UnitAction::RegroupSameUnit:
       break;
 
-    // --- ACTIONS MILITAIRES ---
     case UnitAction::Pillage:
       pillage();
       break;
@@ -402,7 +480,51 @@ void Unit::execute_action(UnitAction action) {
     case UnitAction::Bombard:
       break;
 
-    // --- ACTIONS NEUTRES ---
+    case UnitAction::BuildRoad:
+    case UnitAction::BuildFarm:
+    case UnitAction::BuildMine:
+    case UnitAction::BuildCamp:
+    case UnitAction::BuildCottage:
+    case UnitAction::BuildForestPreserve:
+    case UnitAction::BuildPasture:
+    case UnitAction::BuildPlantation:
+    case UnitAction::BuildQuarry:
+    case UnitAction::BuildLumberMill:
+    case UnitAction::ChopDownForest:
+    case UnitAction::BuildFishingBoats:
+    case UnitAction::BuildWatermill:
+    case UnitAction::BuildWell:
+    case UnitAction::BuildWorkshop:
+    case UnitAction::BuildWinery:
+    case UnitAction::BuildWindmill:
+    case UnitAction::BuildWhalingBoats:
+    case UnitAction::BuildOffshorePlatform:
+    case UnitAction::BuildFort: {
+      // On récupère le temps de construction
+      ImprovementName improvement_name = action_to_improvement(action);
+      int turns = 0;
+
+      if (improvement_name != ImprovementName::None) {
+        turns = ImprovementDatabase::get_info(improvement_name).turns;
+      } else {
+        // Couper une forêt / une jungle
+        turns = 3;
+      }
+
+      // On ajoute la furur action à effectuer
+      this->orders = {action, turns, nullptr};
+      break;
+    }
+
+    default:
+      std::cout << "[DEBUG] L'action " << static_cast<int>(action)
+                << " n'est pas encore implémentée pour " << id << std::endl;
+      break;
+  }
+}
+
+void Unit::execute_action(UnitAction action) {
+  switch (action) {
     case UnitAction::BuildRoad:
       break;
 
@@ -490,6 +612,48 @@ void Unit::execute_action(UnitAction action) {
       std::cout << "[DEBUG] L'action " << static_cast<int>(action)
                 << " n'est pas encore implémentée pour " << id << std::endl;
       break;
+  }
+}
+
+void Unit::execute_orders() {
+  // Si l'unité a des ordres à effectuer
+  if (this->orders.action != UnitAction::None) {
+    UnitAction action = this->orders.action;
+    switch (action) {
+      // 1. C'est une construction d'un aménagement
+      case UnitAction::BuildRoad:
+      case UnitAction::BuildFarm:
+      case UnitAction::BuildMine:
+      case UnitAction::BuildCamp:
+      case UnitAction::BuildCottage:
+      case UnitAction::BuildForestPreserve:
+      case UnitAction::BuildPasture:
+      case UnitAction::BuildPlantation:
+      case UnitAction::BuildQuarry:
+      case UnitAction::BuildLumberMill:
+      case UnitAction::ChopDownForest:
+      case UnitAction::BuildFishingBoats:
+      case UnitAction::BuildWatermill:
+      case UnitAction::BuildWell:
+      case UnitAction::BuildWorkshop:
+      case UnitAction::BuildWinery:
+      case UnitAction::BuildWindmill:
+      case UnitAction::BuildWhalingBoats:
+      case UnitAction::BuildOffshorePlatform:
+      case UnitAction::BuildFort:
+        // On retire l'un des tours de constuctions
+        this->orders.turns--;
+        // S'il n'y a plus d'odre alors la construction est terminé
+        if (this->orders.turns == 0) {
+          execute_action(action);
+          this->orders = {};
+        }
+        break;
+
+      case UnitAction::GoToMove:
+        go_to_move(this->orders.target);
+        break;
+    }
   }
 }
 
