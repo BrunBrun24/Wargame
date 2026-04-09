@@ -5,6 +5,7 @@
 #include <queue>
 #include <random>
 #include <unordered_map>
+#include <ctime>
 
 #include "aerial.h"
 #include "case.h"

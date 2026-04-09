@@ -1,50 +1,27 @@
 cmake_minimum_required(VERSION 3.10)
 project(Wargame)
 
-# --- STANDARDS ET RIGUEUR ---
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Configuration des alertes (strict mode)
-if(MSVC)
-    # /W4 : Niveau d'alerte élevé
-    # /permissive- : Force la conformité standard (détecte les headers manquants)
-    add_compile_options(/W4 /permissive-)
-else()
-    # -Wall -Wextra : Alertes maximales sous Linux
-    add_compile_options(-Wall -Wextra)
-endif()
-
-# --- DÉPENDANCES ---
 find_package(OpenGL REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Widgets OpenGLWidgets)
 
-# On suppose que glfw-3.4 est un sous-dossier de ton projet
-add_subdirectory(glfw-3.4) 
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE HEADERS "src/*.h")
 
-# --- SOURCES ---
-# On récupère récursivement tous les .cpp et .h
-file(GLOB_RECURSE SOURCES 
-    "src/*.cpp"
-    "src/*.h"
+qt_add_executable(Wargame WIN32
+    ${SOURCES}
+    ${HEADERS}
 )
 
-# On ajoute glad.c (qui est du C pur, c'est pour ça qu'il n'était pas dans SOURCES)
-list(APPEND SOURCES "src/glad.c")
-
-# Création de l'exécutable
-add_executable(Wargame ${SOURCES})
-
-# --- INCLUSIONS (Le mode PRIVATE) ---
-# Le mode PRIVATE signifie que ces dossiers d'en-tête sont utilisés 
-# uniquement pour compiler Wargame, ils ne sont pas "exportés" ailleurs.
-target_include_directories(Wargame PRIVATE 
-    src
-    include
-    glfw-3.4/include
+set_target_properties(Wargame PROPERTIES
+    AUTOMOC ON
+    AUTOUIC ON
+    AUTORCC ON
 )
 
-# Ta boucle pour ajouter tous les sous-dossiers de src est une bonne idée
-# pour éviter de faire des #include "game/player.h" et faire juste "player.h"
+# Ajout des dossiers d’inclusion
 file(GLOB_RECURSE ALL_DIRS LIST_DIRECTORIES true "src/*")
 foreach(dir ${ALL_DIRS})
     if(IS_DIRECTORY ${dir})
@@ -52,8 +29,14 @@ foreach(dir ${ALL_DIRS})
     endif()
 endforeach()
 
-# --- LIENS (LIBRARIES) ---
-target_link_libraries(Wargame
-    glfw
-    OpenGL::GL
+target_link_libraries(Wargame PRIVATE
+    Qt6::Widgets
+    Qt6::OpenGLWidgets
+    opengl32
 )
+
+# Ajoute le fichier de ressources
+qt6_add_resources(RESOURCES resources/resources.qrc)
+
+# Ajoute le fichier compilé à ton exécutable
+target_sources(Wargame PRIVATE ${RESOURCES})
