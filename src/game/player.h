@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "type.h"
+#include "../type.h"
 
 class Unit;
 class Case;

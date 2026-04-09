@@ -1,8 +1,7 @@
 #pragma once
 
 #include <map>
-
-#include "type.h"
+#include "../type.h"
 
 enum class ResourceType { Strategic, Production, Food, Commerce };
 

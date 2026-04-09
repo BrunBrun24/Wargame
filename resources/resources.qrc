@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../images/civ6.png</file>
+    </qresource>
+</RCC>

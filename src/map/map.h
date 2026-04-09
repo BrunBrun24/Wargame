@@ -5,7 +5,7 @@
 
 #include "case.h"
 #include "player.h"
-#include "type.h"
+#include "../type.h"
 
 struct Coordinate {
   int x;
