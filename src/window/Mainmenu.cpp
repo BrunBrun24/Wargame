@@ -120,9 +120,19 @@ void Mainmenu::paintGL()
         glEnd();
     }
     // partie de texte, faut que je comprenne comment cela fonctionne.
+   // --- Partie Texte ---
     QPainter painter(this);
     painter.setPen(Qt::black);
-    painter.setFont(QFont("Arial", 18));
+
+    // 1. Calcul de la taille de police dynamique
+    // On définit une taille de base (ex: 20) pour une largeur de référence (ex: 1280)
+    int baseWidth = 1280;
+    int fontSize = qMax(10, (this->width() * 24) / baseWidth); 
+    // qMax(10, ...) permet d'éviter que le texte devienne illisible sur les petites fenêtres
+
+    QFont dynamicFont("Arial", fontSize);
+    dynamicFont.setBold(true); // Optionnel : rend le menu plus lisible
+    painter.setFont(dynamicFont);
 
     for (size_t i = 0; i < grid.size() && i < labels.size(); ++i) {
         const std::vector<float>& rect = grid[i];
@@ -135,8 +145,15 @@ void Mainmenu::paintGL()
         int px = (centerX + 1.0f) * width() / 2.0f;
         int py = (1.0f - centerY) * height() / 2.0f;
 
-        // Dessiner le texte centré
-        QRect textRect(px - 60, py - 15, 120, 30); // Ajuster si nécessaire
+        // 2. Calculer une zone de texte proportionnelle au rectangle OpenGL
+        // Ici, tes rectangles font 1.2 de large (0.6 - (-0.6)) en coordonnées OpenGL
+        int rectWidthPx = 1.2f * (width() / 2.0f);
+        int rectHeightPx = 0.4f * (height() / 2.0f);
+
+        // On crée un rectangle de texte centré sur le point calculé
+        QRect textRect(px - rectWidthPx/2, py - rectHeightPx/2, rectWidthPx, rectHeightPx);
+
+        // Dessiner le texte parfaitement centré dans sa zone
         painter.drawText(textRect, Qt::AlignCenter, labels[i]);
     }
 
@@ -148,11 +165,7 @@ void Mainmenu::paintGL()
 void Mainmenu::mousePressEvent(QMouseEvent *event){
     int x = event->position().x();
     int y = event->position().y();
-    QString xStr = QString::number(x);
-    QString yStr = QString::number(y);
-    qDebug() << xStr << " , " << yStr << "\n";
     //traduction en OPENGL float
-
     int h = height();
     int w = width();
 
@@ -161,14 +174,20 @@ void Mainmenu::mousePressEvent(QMouseEvent *event){
     qDebug() << xGL << " , " << yGL << "\n";
     //Borders width of the rectangles (static borders, always the same)
     if((xGL <= 0.6f) && (xGL >= -0.6f)){
-        if((yGL <= 0.8f) && (yGL >= 0.4f))
+        if((yGL <= 0.8f) && (yGL >= 0.4f)){
             qDebug() << "Nouvelle Partie" << "\n";
+            emit menuChanged(1); //1 sera Nouvelle partie
+        } 
         else{
-            if((yGL <= 0.2f) && (yGL >= -0.2f))
+            if((yGL <= 0.2f) && (yGL >= -0.2f)){
                 qDebug() << "Continuer Partie" << "\n";
+                emit menuChanged(2); //2 sera Continuer une Partie                
+            }
             else{
-                if((yGL <= -0.4f) && (yGL >= -0.8f))
+                if((yGL <= -0.4f) && (yGL >= -0.8f)){
                     qDebug() << "Options" << "\n";
+                    emit menuChanged(3); //3 sera Options.                    
+                }
             }
         }
     }
