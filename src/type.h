@@ -128,6 +128,7 @@ struct Yields {
   int culture = 0;
   int science = 0;
   int happiness = 0;
+  int unhappiness = 0;
   int health = 0;
   int sickness = 0;
   double defense = 0;

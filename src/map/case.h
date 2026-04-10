@@ -26,8 +26,8 @@ struct Terrain {
    * @return 2 si présence d'une feature ou d'une colline, 1 sinon.
    */
   double calculate_PM() const {
-    if (feature != TerrainFeature::Forest ||
-        feature != TerrainFeature::Jungle ||
+    if (feature == TerrainFeature::Forest ||
+        feature == TerrainFeature::Jungle ||
         elevation == TerrainElevation::Hill) {
       return 2;
     }
@@ -46,6 +46,16 @@ class Case {
 
   /** @return Le chemin le plus court pour aller à la case cible */
   Course distance_between(const Case* target_case);
+
+  /** @return Le nombre minimum de case pour aller à la case cible */
+  int calculate_distance_between(const Case* target_case);
+
+  /** * @brief Récupère toutes les cases dans un rayon donné (sans compter la
+   * case actuelle).
+   * @param range Le rayon de recherche (1 = voisins directs, 2 = cercle
+   * suivant, etc.)
+   */
+  std::vector<Case*> get_cases_in_range(int range) const;
 
   /**
    * @brief Vérifie si une ville peut être construite ici (distance de 2 cases

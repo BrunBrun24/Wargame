@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <queue>
+#include <set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "aerial.h"
@@ -85,6 +87,72 @@ Course Case::distance_between(const Case* target_case) {
   return {false, {}};
 }
 
+int Case::calculate_distance_between(const Case* target_case) {
+  // Si on est déjà sur la case cible
+  if (this == target_case) {
+    return 0;
+  }
+
+  // File pour le BFS : <Case actuelle, distance parcourue>
+  std::queue<std::pair<const Case*, int>> queue;
+  // Ensemble pour suivre les cases déjà visitées et éviter les cycles
+  std::unordered_set<const Case*> visited;
+
+  queue.push({this, 0});
+  visited.insert(this);
+
+  while (!queue.empty()) {
+    auto [current, distance] = queue.front();
+    queue.pop();
+
+    // Si on a atteint la destination
+    if (current == target_case) {
+      return distance;
+    }
+
+    // Exploration des voisins adjacents
+    for (Case* neighbor : current->get_neighbors()) {
+      if (visited.find(neighbor) == visited.end()) {
+        visited.insert(neighbor);
+        queue.push({neighbor, distance + 1});
+      }
+    }
+  }
+
+  // Si aucune connexion n'est trouvée
+  return -1;
+}
+
+std::vector<Case*> Case::get_cases_in_range(int range) const {
+  std::vector<Case*> result;
+  if (range <= 0) return result;
+
+  std::set<Case*> visited;
+  // On utilise une queue de paires <Case*, distance_actuelle>
+  std::queue<std::pair<Case*, int>> queue;
+
+  visited.insert(const_cast<Case*>(this));
+  queue.push({const_cast<Case*>(this), 0});
+
+  while (!queue.empty()) {
+    auto [current, dist] = queue.front();
+    queue.pop();
+
+    // Si on a atteint la distance max, on n'explore plus les voisins
+    if (dist >= range) continue;
+
+    for (Case* neighbor : current->get_neighbors()) {
+      if (visited.find(neighbor) == visited.end()) {
+        visited.insert(neighbor);
+        result.push_back(neighbor);
+        queue.push({neighbor, dist + 1});
+      }
+    }
+  }
+
+  return result;
+}
+
 bool Case::is_valid_for_city() const {
   // 1. Vérification sur la case elle-même
   if (this->_city != nullptr) return false;
@@ -96,12 +164,25 @@ bool Case::is_valid_for_city() const {
     // 3. Vérification des voisins des voisins (distance 2)
     for (Case* second_neighbor : neighbor->get_neighbors()) {
       if (second_neighbor->get_city() != nullptr) return false;
+
+      // 4. Vérification des voisins des voisins ... (distance 3)
+      for (Case* third_neighbour : neighbor->get_neighbors()) {
+        if (third_neighbour->get_city() != nullptr) return false;
+      }
     }
   }
   return true;
 }
 
-void Case::create_city(Player* player) { _city = new City(this, player); }
+void Case::create_city(Player* player) {
+  // Si le joueur n'a pas encore de ville
+  if (this->get_player()->get_citys().size() == 0) {
+    // Alors ça première devient ça capital
+    _city = new City(this, player, 1);
+  } else {
+    _city = new City(this, player, 0);
+  }
+}
 
 Yields Case::get_total_yields() const {
   // 1. Rendement de la case
@@ -115,7 +196,6 @@ Yields Case::get_total_yields() const {
     total.health += 1;
   } else if (_terrain.feature == TerrainFeature::Jungle) {
     total.production -= 1;
-    total.sickness += 1;
   }
 
   // 2. Bonus des ressources et des aménagements
@@ -128,11 +208,12 @@ Yields Case::get_total_yields() const {
     total.culture += bonus.resource_bonus.yields.culture;
     total.science += bonus.resource_bonus.yields.science;
     total.happiness += bonus.resource_bonus.yields.happiness;
+    total.unhappiness += bonus.resource_bonus.yields.unhappiness;
     total.health += bonus.resource_bonus.yields.health;
     total.sickness += bonus.resource_bonus.yields.sickness;
     total.defense += bonus.resource_bonus.yields.defense;
 
-    // On regarde si il y a un aménagement sur la ressource
+    // On regarde s'il y a un aménagement sur la ressource
     if (_terrain.improvement != ImprovementName::None) {
       total.food += bonus.improvement_bonus.yields.food;
       total.production += bonus.improvement_bonus.yields.production;
@@ -140,13 +221,12 @@ Yields Case::get_total_yields() const {
       total.culture += bonus.resource_bonus.yields.culture;
       total.science += bonus.resource_bonus.yields.science;
       total.happiness += bonus.improvement_bonus.yields.happiness;
+      total.unhappiness += bonus.improvement_bonus.yields.unhappiness;
       total.health += bonus.improvement_bonus.yields.health;
       total.sickness += bonus.improvement_bonus.yields.sickness;
       total.defense += bonus.improvement_bonus.yields.defense;
     }
   }
-
-  // 3. Bonus des bâtiments de la ville
 
   return total;
 }

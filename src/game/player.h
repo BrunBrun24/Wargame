@@ -43,10 +43,14 @@ class Player {
     _improvements_resources[name] += 1;
   };
 
+  /** @return Retourne la case où se trouve la capitale */
+  Case* get_city_capital();
+
   int get_id() const { return _id; }
   Country get_country() const { return _country; }
-  ResourceInventory get_resources() { return _resources; }
+  std::vector<City*>& get_citys() { return _citys; }
   PlayerIncome& get_income() { return _income; }
+  ResourceInventory get_resources() { return _resources; }
 
  private:
   static int _id_counter;

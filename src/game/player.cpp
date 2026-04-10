@@ -142,9 +142,20 @@ void Player::process_turn() {
   // 1. Gestion des ressources
   for (City* c : _citys) {
     if (c) {
-      c->update_data();
+      c->update_city();
     }
   }
 
   // 2. Gestion des unités
+}
+
+Case* Player::get_city_capital() {
+  for (City* c : this->_citys) {
+    if (c->is_capital()) {
+      return c->get_city_case();
+    }
+  }
+
+  // Si le joueur n'a pas de capital
+  return nullptr;
 }
