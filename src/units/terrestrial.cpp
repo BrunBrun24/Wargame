@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "case.h"
+#include "player.h"
 #include "resource_database.h"
 
 Terrestrial::Terrestrial(UnitName name, Player* player, Case* case_unit)

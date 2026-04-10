@@ -15,7 +15,6 @@ using ResourceInventory = std::map<ResourceName, int>;
 struct PlayerIncome {
   int gold = 0;
   int science = 0;
-  int culture = 0;
 };
 
 class Player {
@@ -25,6 +24,15 @@ class Player {
 
   /** @brief Permet à l'utilisateur de choisir son pays dans le terminal */
   static Country choice_country(const std::vector<Country>& excluded_countries);
+
+  /** @brief Méthode calculant l'income et qui sera appelé à chaque
+   * déplacement d'unité */
+  int depense_gold() const;
+
+  /** @brief Initialise le début du tour.
+   * Change l'income du joueur en fonction de la production de chaque ville.
+   * Réinitialise les PMs des de chaque unité */
+  void initialise_turn();
 
   void clear_units();
   void add_unit(Unit* unit);
@@ -36,8 +44,6 @@ class Player {
   void clear_citys();
   void add_city(City* c);
   void remove_city(City* c);
-
-  void process_turn();
 
   void add_improvement_resource(ResourceName name) {
     _improvements_resources[name] += 1;

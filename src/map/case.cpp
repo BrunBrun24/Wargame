@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <queue>
-#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -127,7 +126,7 @@ std::vector<Case*> Case::get_cases_in_range(int range) const {
   std::vector<Case*> result;
   if (range <= 0) return result;
 
-  std::set<Case*> visited;
+  std::unordered_set<Case*> visited;
   // On utilise une queue de paires <Case*, distance_actuelle>
   std::queue<std::pair<Case*, int>> queue;
 

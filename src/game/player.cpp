@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <limits>
+#include <random>
 
 #include "algorithm"
 #include "case.h"
@@ -72,6 +73,53 @@ Country Player::choice_country(const std::vector<Country>& excluded_countries) {
   return selected;
 }
 
+int Player::depense_gold() const {
+  int gold_yield = 0;
+
+  int units_enemy_territory = 0;
+  for (Unit* unit : _units) {
+    // On compte le nombre d'unités qui sont sur le territoire ennemie
+    if (unit->get_case_unit()->get_player() != this) {
+      units_enemy_territory++;
+    }
+  }
+
+  // Si le joueur à plus de 24 unités, chaque unité en plus coûtera 1 or
+  if (this->_units.size() > 24) {
+    gold_yield += static_cast<int>(_units.size() - 24);
+  }
+
+  // Si le joueur a des unités dans un territoire ennemie elle coûtent de
+  // l'argent
+  // 4 unités seront gratuites mais ensuite chaques unités coûtera 0.5 or
+  if (units_enemy_territory > 4) {
+    gold_yield += static_cast<int>((units_enemy_territory - 4) * 0.5);
+  }
+
+  return gold_yield;
+}
+
+void Player::initialise_turn() {
+  int gold_yield = 0;
+
+  // 1. Mets à jour la production des villes et l'income du joueur
+  for (City* city : this->_citys) {
+    city->update_yields();
+    city->update_city();
+
+    CityData data = city->get_data();
+    gold_yield += data.commerce.yield;
+  }
+
+  // 2. Réinitialise les PMs de chaque unité
+  for (Unit* unit : this->_units) {
+    unit->set_PM(UNIT_STATS.at(unit->get_name()).PM);
+  }
+
+  // 3. Mets à jour l'income en or pour l'affichage
+  this->_income.gold = gold_yield - this->depense_gold();
+}
+
 void Player::clear_units() {
   while (!_units.empty()) {
     Unit* u = _units.back();
@@ -136,17 +184,6 @@ void Player::remove_city(City* city) {
   if (it != _citys.end()) {
     _citys.erase(it);
   }
-}
-
-void Player::process_turn() {
-  // 1. Gestion des ressources
-  for (City* c : _citys) {
-    if (c) {
-      c->update_city();
-    }
-  }
-
-  // 2. Gestion des unités
 }
 
 Case* Player::get_city_capital() {

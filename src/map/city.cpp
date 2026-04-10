@@ -64,7 +64,7 @@ void City::check_for_expansion() {
   }
 }
 
-void City::calculate_yields() {
+void City::update_yields() {
   Yields total;
 
   // 1. Rendement de base

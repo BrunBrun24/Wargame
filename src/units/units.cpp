@@ -1,16 +1,17 @@
 #include "units.h"
 
 #include <algorithm>
+#include <ctime>
 #include <iostream>
 #include <queue>
 #include <random>
 #include <unordered_map>
-#include <ctime>
 
 #include "aerial.h"
 #include "case.h"
 #include "improvement_database.h"
 #include "maritime.h"
+#include "player.h"
 #include "resource_database.h"
 #include "terrestrial.h"
 
@@ -736,6 +737,13 @@ void Unit::build_improvement(ImprovementName name) {
 bool Unit::is_military() const {
   if ((name != UnitName::Settler) && (name != UnitName::Worker) &&
       (name != UnitName::WorkBoat)) {
+    return true;
+  }
+  return false;
+}
+
+bool Unit::contains_pending_orders() const {
+  if (this->orders.action != UnitAction::None) {
     return true;
   }
   return false;

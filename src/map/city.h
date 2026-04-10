@@ -61,9 +61,7 @@ class City {
 
   void check_for_expansion();
 
-  /** @brief Calcule le rendement de la ville */
-  void calculate_yields();
-
+  void update_yields();
   void update_city();
 
   int calculate_happiness() const;
@@ -86,6 +84,8 @@ class City {
 
   int get_id() const { return _id; }
   bool is_capital() const { return _is_capital; }
+
+  CityData get_data() const { return _data; }
 
   void set_city_case(Case* c) { _city_case = c; }
   void set_player(Player* p) { _player = p; }

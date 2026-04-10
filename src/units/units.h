@@ -4,10 +4,10 @@
 #include <map>
 #include <vector>
 
-#include "player.h"
 #include "../type.h"
 
 class Case;
+class Player;
 
 struct OrderRequest {
   UnitAction action = UnitAction::None;  // Action à effectuer
@@ -106,6 +106,7 @@ class Unit {
   bool can_build_improvement(ImprovementName name);
   void build_improvement(ImprovementName name);
   bool is_military() const;
+  bool contains_pending_orders() const;
   UnitStats get_stats() const { return stats; }
   std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
 

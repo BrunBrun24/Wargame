@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include <iostream>
+
 Game::Game(int nb_player) : _nb_player(nb_player), _map(nb_player) {}
 
 void Game::start_game() {
@@ -13,10 +15,24 @@ void Game::start_game() {
 
 void Game::turn_by_turn() {
   std::vector<Player*> players = _map.get_players();
+  int turn_count = 1;
 
+  // Boucle principale du jeu
   while (players.size() > 1) {
-    for (const auto& player : players) {
+    std::cout << "\n========== TOUR " << turn_count
+              << " ==========" << std::endl;
+
+    for (Player* player : players) {
+      if (player == nullptr) continue;
+
+      std::cout << "\nC'est au tour de : " << player->get_id() << std::endl;
+
+      player->initialise_turn();
+
+      // 2. Phase d'interaction
+      this->play(*player);
     }
+    turn_count++;
   }
 }
 
