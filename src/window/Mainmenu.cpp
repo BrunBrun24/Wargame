@@ -7,6 +7,8 @@
 #include <QPainter>
 #include <QFont>
 #include <QStringList>
+#include <QMediaPlayer>
+#include <QAudioOutput>
 
 float int_color_into_float_color(int color){
     if (color < 256){
@@ -29,7 +31,12 @@ Mainmenu::~Mainmenu()
 void Mainmenu::initializeGL()
 {
     initializeOpenGLFunctions();
+    clickPlayer = new QMediaPlayer(this);
+    audioOutput = new QAudioOutput(this);
 
+    clickPlayer->setAudioOutput(audioOutput);
+    clickPlayer->setSource(QUrl("qrc:/sounds/chat.mp3"));
+    audioOutput->setVolume(0.2); // Volume à 20%
     // Charge l'image depuis les ressources
     QImage img(":/images/civ6.png");
     if (img.isNull()) {
@@ -41,7 +48,7 @@ void Mainmenu::initializeGL()
     delete texture;
 
     // Crée la texture OpenGL
-    texture = new QOpenGLTexture(img.mirrored()); // mirrored pour corriger l'axe Y
+    texture = new QOpenGLTexture(img.flipped(Qt::Vertical)); // mirrored pour corriger l'axe Y
 
     texture->setMinificationFilter(QOpenGLTexture::Linear);
     texture->setMagnificationFilter(QOpenGLTexture::Linear);
@@ -177,11 +184,16 @@ void Mainmenu::mousePressEvent(QMouseEvent *event){
         if((yGL <= 0.8f) && (yGL >= 0.4f)){
             qDebug() << "Nouvelle Partie" << "\n";
             emit menuChanged(1); //1 sera Nouvelle partie
+            
         } 
         else{
             if((yGL <= 0.2f) && (yGL >= -0.2f)){
                 qDebug() << "Continuer Partie" << "\n";
-                emit menuChanged(2); //2 sera Continuer une Partie                
+                emit menuChanged(2); //2 sera Continuer une Partie  
+                if (clickPlayer->playbackState() == QMediaPlayer::PlayingState) {
+                    clickPlayer->stop();
+                }
+                clickPlayer->play();   
             }
             else{
                 if((yGL <= -0.4f) && (yGL >= -0.8f)){

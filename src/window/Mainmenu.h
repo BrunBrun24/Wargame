@@ -3,7 +3,8 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLTexture>
 #include <QMouseEvent>
-
+#include <QMediaPlayer>
+#include <QAudioOutput>
 
 class Mainmenu : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -23,5 +24,6 @@ class Mainmenu : public QOpenGLWidget, protected QOpenGLFunctions
         void mousePressEvent(QMouseEvent *event) override;
     private:
         QOpenGLTexture* texture;
-
+        QMediaPlayer *clickPlayer;
+        QAudioOutput *audioOutput;
 };

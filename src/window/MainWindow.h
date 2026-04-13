@@ -4,6 +4,7 @@
 #include "Mainmenu.h"
 #include "OptionMenu.h"
 #include "SetupNewGameWindow.h"
+#include "MyGLWidget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -17,4 +18,5 @@ private:
     Mainmenu* mainMenu;       // Le menu principal
     OptionMenu* optionMenu;   // Le menu des options
     SetupNewGameWindow* setupmenu; // Le menu du setup de jeux
+    MyGLWidget* test;
 };

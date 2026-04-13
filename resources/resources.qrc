@@ -1,9 +1,10 @@
 <RCC>
     <qresource prefix="/">
         <file>../images/civ6.png</file>
-    </qresource>
-    <qresource prefix="/">
         <file>../images/test_civ6.jpg</file>
+    </qresource> 
+    <qresource prefix="/sounds"> 
+        <file alias="chat.mp3">../sounds/bruit_de_chat_chelou.mp3</file> 
+        <file alias="explosion.mp3">../sounds/macron_explosion.mp3</file>
     </qresource>
 </RCC>
-    

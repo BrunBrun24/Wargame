@@ -2,6 +2,7 @@
 #include "Mainmenu.h"
 #include "OptionMenu.h"
 #include "SetupNewGameWindow.h"
+#include "MyGLWidget.h"
 
 #include <QStackedWidget>
 
@@ -13,12 +14,14 @@ MainWindow::MainWindow(QWidget *parent)
     mainMenu = new Mainmenu(this);
     optionMenu = new OptionMenu(this);
     setupmenu = new SetupNewGameWindow(this);
+    test = new MyGLWidget(this);
+
 
     //Liste de widget (pages différentes qu'on peut avoir)
     stackedWidget->addWidget(mainMenu);   // Index 0
     stackedWidget->addWidget(optionMenu); // Index 1
     stackedWidget->addWidget(setupmenu);
-
+    stackedWidget->addWidget(test);
     //premier widget sera celui affiché.
     setCentralWidget(stackedWidget);
 
@@ -33,6 +36,9 @@ MainWindow::MainWindow(QWidget *parent)
         }
         else if(menu == 1){
             stackedWidget->setCurrentWidget(setupmenu);
+        }
+        else if (menu == 2){
+            stackedWidget->setCurrentWidget(test);
         }
     });
 

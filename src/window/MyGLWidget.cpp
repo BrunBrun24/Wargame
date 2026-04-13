@@ -1,9 +1,9 @@
-/*#include "MyGLWidget.h"
+#include "MyGLWidget.h"
 #include <QOpenGLFunctions>
 
 MyGLWidget::MyGLWidget(QWidget* parent) : QOpenGLWidget(parent) {}
 
-float int_color_into_float_color(int color){
+/*float int_color_into_float_color(int color){
     if (color < 256){
         return color / 255.0f;
     }
@@ -17,7 +17,7 @@ float* int_array_color_into_float_array_color(const int* couleurs){
     }
     return transfert;
 }
-
+*/
 void MyGLWidget::initializeGL() {
     //initialisation de GL
     initializeOpenGLFunctions();
@@ -28,9 +28,10 @@ void MyGLWidget::initializeGL() {
     int choix1[3] = {139, 247, 246};
     int choix2[3] = {189, 17, 172};
 
-    float* choix_choix = int_array_color_into_float_array_color(choix1);
-    glClearColor(choix_choix[0],choix_choix[1],choix_choix[2],1.0f);
-    delete[] choix_choix;
+    //float* choix_choix = int_array_color_into_float_array_color(choix1);
+    //glClearColor(choix_choix[0],choix_choix[1],choix_choix[2],1.0f);
+    glClearColor(1.0f,1.0f,1.0f,1.0f);
+    //delete[] choix_choix;
 }
 
 void MyGLWidget::resizeGL(int w, int h) {
@@ -69,10 +70,10 @@ void MyGLWidget::paintGL() {
         }
     }
 }
-*/
 
 
-/* 
+
+/*
 int hexCount = 30;        // nombre d'hexagones
     float radius = 0.05f;     // longueur de chaque côté
     float spacing = radius * sqrt(3.0f); // distance horizontale entre centres

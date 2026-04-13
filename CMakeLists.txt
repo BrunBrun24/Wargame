@@ -4,13 +4,15 @@ project(Wargame)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_PREFIX_PATH "C:/Qt/6.10.1/mingw_64")
+
 find_package(OpenGL REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Widgets OpenGLWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets OpenGLWidgets Multimedia)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "src/*.h")
 
-qt_add_executable(Wargame WIN32
+qt_add_executable(Wargame
     ${SOURCES}
     ${HEADERS}
 )
@@ -32,6 +34,7 @@ endforeach()
 target_link_libraries(Wargame PRIVATE
     Qt6::Widgets
     Qt6::OpenGLWidgets
+    Qt6::Multimedia
     opengl32
 )
 
