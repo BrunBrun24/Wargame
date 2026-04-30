@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <QMap>
 
 #include "../type.h"
 #include "case.h"
@@ -17,6 +18,7 @@ using vector_coordinates = std::vector<Coordinate>;
 class Map {
  public:
   Map(int nb_player);
+  Map(const QMap<int,Country>& PaysDesJoueurs);
   ~Map();
 
   /** @brief Calcule la distance entre deux coordonnées */
@@ -33,6 +35,7 @@ class Map {
   std::vector<Player*> get_players() { return _players; }
   std::vector<std::vector<Case>>& get_cases() { return _cases; }
 
+  Map* getMap() {return this;} // pour afficher la map sur le jeu
  private:
   int _size_h;
   int _size_w;

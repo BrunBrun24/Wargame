@@ -45,6 +45,16 @@ Map::Map(int nb_player) {
   std::cout << std::endl;
 }
 
+Map::Map(const QMap<int,Country>& PaysDesJoueurs){
+  _size_h = 28;
+  _size_w = 44;//A changer pour la méthode d'au dessus (taille de la map pour les joueurs)
+  _cases.resize(_size_h, std::vector<Case>(_size_w));
+  for (auto it = PaysDesJoueurs.begin(); it != PaysDesJoueurs.end(); ++it) {
+    _players.push_back(new Player(it.value()));
+  }
+  std::cout << std::endl;
+}
+
 Map::~Map() {
   for (Player* p : _players) {
     if (p) {
