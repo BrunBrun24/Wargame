@@ -1,8 +1,37 @@
 #include "resource_database.h"
 
+std::string ResourceDatabase::get_improvement_name_str(ResourceName name) {
+  if (_data.find(name) == _data.end()) return "";
+
+  ImprovementName imp = _data.at(name).improvement_bonus.improvement;
+
+  switch (imp) {
+    case ImprovementName::Mine:
+      return "Mine";
+    case ImprovementName::Farm:
+      return "Ferme";
+    case ImprovementName::Pasture:
+      return "Pâturage";
+    case ImprovementName::Quarry:
+      return "Carrière";
+    case ImprovementName::Plantation:
+      return "Plantation";
+    case ImprovementName::Camp:
+      return "Camp";
+    case ImprovementName::Winery:
+      return "Vignoble";
+    case ImprovementName::LumberMill:
+      return "Scierie";
+    case ImprovementName::Fort:
+      return "Fort";
+    default:
+      return "";
+  }
+}
+
 std::map<ResourceName, Bonus> ResourceDatabase::_data = {
     // --- Strategic ---
-    {ResourceName::Aluminum,
+    {ResourceName::Aluminium,
      {{ResourceType::Strategic, UnitAction::BuildMine, {0, 1, 0, 0, 0, 0, 0}},
       {ImprovementName::Mine, {0, 1, 1, 0, 0, 0, 0}}}},
 
@@ -25,7 +54,7 @@ std::map<ResourceName, Bonus> ResourceDatabase::_data = {
       {ImprovementName::Mine, {0, 1, 0, 0, 0, 0, 0}}}},
 
     {ResourceName::Ivory,
-     {{ResourceType::Production, UnitAction::BuildCamp, {0, 1, 0, 0, 0, 0, 0}},
+     {{ResourceType::Strategic, UnitAction::BuildCamp, {0, 1, 0, 0, 0, 0, 0}},
       {ImprovementName::Camp, {0, 1, 1, 0, 0, 0, 0}}}},
 
     {ResourceName::Oil,

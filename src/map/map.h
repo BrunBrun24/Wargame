@@ -3,9 +3,9 @@
 #include <memory>
 #include <vector>
 
+#include "../type.h"
 #include "case.h"
 #include "player.h"
-#include "../type.h"
 
 struct Coordinate {
   int x;

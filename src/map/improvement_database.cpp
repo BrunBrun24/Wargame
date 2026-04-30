@@ -1,7 +1,8 @@
 #include "improvement_database.h"
 
 std::map<ImprovementName, ImprovementData> ImprovementDatabase::_data = {
-    {ImprovementName::None, {{}, {}, {}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0}, 0, 0}},
+    {ImprovementName::None,
+     {{}, {}, {}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0}, 0, 0}},
 
     {ImprovementName::Farm,
      {{TerrainsType::Grassland, TerrainsType::Plains},
@@ -12,7 +13,12 @@ std::map<ImprovementName, ImprovementData> ImprovementDatabase::_data = {
       5}},
 
     {ImprovementName::Mine,
-     {{}, {TerrainElevation::Hill}, {}, {0, 2, 0, 0, 0, 0, 0, 0, 0, 0.0}, 10, 4}},
+     {{},
+      {TerrainElevation::Hill},
+      {},
+      {0, 2, 0, 0, 0, 0, 0, 0, 0, 0.0},
+      10,
+      4}},
 
     {ImprovementName::Quarry,
      {{TerrainsType::Grassland, TerrainsType::Plains, TerrainsType::Desert},
@@ -55,7 +61,12 @@ std::map<ImprovementName, ImprovementData> ImprovementDatabase::_data = {
       5}},
 
     {ImprovementName::LumberMill,
-     {{}, {}, {TerrainFeature::Forest}, {0, 1, 0, 0, 0, 0, 0, 0, 0, 0.0}, 5, 8}},
+     {{},
+      {},
+      {TerrainFeature::Forest},
+      {0, 1, 0, 0, 0, 0, 0, 0, 0, 0.0},
+      5,
+      8}},
 
     {ImprovementName::Workshop,
      {{TerrainsType::Grassland, TerrainsType::Plains},
@@ -74,7 +85,12 @@ std::map<ImprovementName, ImprovementData> ImprovementDatabase::_data = {
       8}},
 
     {ImprovementName::Windmill,
-     {{}, {TerrainElevation::Hill}, {}, {1, 0, 1, 0, 0, 0, 0, 0, 0, 0.0}, 5, 5}},
+     {{},
+      {TerrainElevation::Hill},
+      {},
+      {1, 0, 1, 0, 0, 0, 0, 0, 0, 0.0},
+      5,
+      5}},
 
     {ImprovementName::Cottage,
      {{TerrainsType::Grassland, TerrainsType::Plains, TerrainsType::Desert},
@@ -90,7 +106,8 @@ std::map<ImprovementName, ImprovementData> ImprovementDatabase::_data = {
     {ImprovementName::Village,
      {{}, {}, {}, {0, 0, 3, 0, 0, 0, 0, 0, 0, 0.0}, 20, 0}},
 
-    {ImprovementName::Town, {{}, {}, {}, {0, 0, 4, 0, 0, 0, 0, 0, 0, 0.0}, 25, 0}},
+    {ImprovementName::Town,
+     {{}, {}, {}, {0, 0, 4, 0, 0, 0, 0, 0, 0, 0.0}, 25, 0}},
 
     {ImprovementName::FishingBoats,
      {{TerrainsType::Coast, TerrainsType::Ocean},
@@ -126,7 +143,12 @@ std::map<ImprovementName, ImprovementData> ImprovementDatabase::_data = {
       10}},
 
     {ImprovementName::ForestPreserve,
-     {{}, {}, {TerrainFeature::Forest}, {0, 0, 0, 1, 0, 0, 0, 0, 0, 0.0}, 5, 8}},
+     {{},
+      {},
+      {TerrainFeature::Forest},
+      {0, 0, 0, 1, 0, 0, 0, 0, 0, 0.0},
+      5,
+      8}},
 
     {ImprovementName::Well,
      {{TerrainsType::Grassland, TerrainsType::Plains, TerrainsType::Desert},

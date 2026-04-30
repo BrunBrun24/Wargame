@@ -26,6 +26,7 @@ class Unit {
   static Unit* create_unit(const UnitName name, Player* player, Case* c);
   static std::vector<UnitName> get_all_units();
   static ImprovementName action_to_improvement(UnitAction action);
+  static std::string get_unit_type_name(UnitType type);
 
   /** @brief Détermine si l'on peut atteindre la case en partant de l'unité */
   Course can_move_to(const Case* target_case);

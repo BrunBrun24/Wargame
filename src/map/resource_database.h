@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+
 #include "../type.h"
 
 enum class ResourceType { Strategic, Production, Food, Commerce };
@@ -24,6 +25,7 @@ struct Bonus {
 class ResourceDatabase {
  public:
   static const Bonus& get_info(ResourceName name) { return _data.at(name); }
+  static std::string get_improvement_name_str(ResourceName name);
 
  private:
   static std::map<ResourceName, Bonus> _data;

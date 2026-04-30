@@ -313,7 +313,7 @@ std::string Case::get_description() const {
         return "Res_Oil";
       case ResourceName::Uranium:
         return "Res_Uranium";
-      case ResourceName::Aluminum:
+      case ResourceName::Aluminium:
         return "Res_Aluminum";
 
       // Santé

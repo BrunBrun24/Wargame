@@ -298,7 +298,7 @@ bool Map::_is_resource_compatible(const ResourceName resource, int r,
     case ResourceName::Iron:
     case ResourceName::Copper:
     case ResourceName::Coal:
-    case ResourceName::Aluminum:
+    case ResourceName::Aluminium:
       return (type != TerrainsType::Ocean && type != TerrainsType::Ice);
 
     case ResourceName::Horse:
@@ -672,16 +672,16 @@ void Map::_generate_resources(
 
   // 2. On ajoute les autres ressources
   std::vector<ResourceName> all_resources = {
-      ResourceName::Aluminum, ResourceName::Coal,    ResourceName::Copper,
-      ResourceName::Horse,    ResourceName::Ivory,   ResourceName::Oil,
-      ResourceName::Uranium,  ResourceName::Marble,  ResourceName::Stone,
-      ResourceName::Banana,   ResourceName::Clam,    ResourceName::Cow,
-      ResourceName::Crab,     ResourceName::Deer,    ResourceName::Fish,
-      ResourceName::Pig,      ResourceName::Rice,    ResourceName::Sheep,
-      ResourceName::Wheat,    ResourceName::Sugar,   ResourceName::Whale,
-      ResourceName::Dye,      ResourceName::Fur,     ResourceName::Gems,
-      ResourceName::Gold,     ResourceName::Incense, ResourceName::Silk,
-      ResourceName::Silver,   ResourceName::Spices,  ResourceName::Wine};
+      ResourceName::Aluminium, ResourceName::Coal,    ResourceName::Copper,
+      ResourceName::Horse,     ResourceName::Ivory,   ResourceName::Oil,
+      ResourceName::Uranium,   ResourceName::Marble,  ResourceName::Stone,
+      ResourceName::Banana,    ResourceName::Clam,    ResourceName::Cow,
+      ResourceName::Crab,      ResourceName::Deer,    ResourceName::Fish,
+      ResourceName::Pig,       ResourceName::Rice,    ResourceName::Sheep,
+      ResourceName::Wheat,     ResourceName::Sugar,   ResourceName::Whale,
+      ResourceName::Dye,       ResourceName::Fur,     ResourceName::Gems,
+      ResourceName::Gold,      ResourceName::Incense, ResourceName::Silk,
+      ResourceName::Silver,    ResourceName::Spices,  ResourceName::Wine};
 
   for (ResourceName res : all_resources) {
     int to_place = static_cast<int>(_players.size() * 2);

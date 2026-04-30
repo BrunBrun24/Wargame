@@ -94,7 +94,7 @@ class Case {
 
   City* get_city() const { return _city; }
   void set_city(City* city) { _city = city; }
-  bool has_city() { return (_city != nullptr); }
+  bool has_city() const { return (_city != nullptr); }
 
   std::vector<Case*> get_neighbors() const { return _neighbors; }
   std::vector<Unit*> get_units() const { return _units; }

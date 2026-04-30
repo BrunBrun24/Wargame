@@ -1,5 +1,6 @@
 #include <queue>
 #include <string>
+#include <vector>
 
 #include "../type.h"
 
@@ -41,6 +42,7 @@ struct CityData {
   int unhappiness_yield = 1;
   int population = 1;
   int maintenance_costs = 0;  // Ce que la ville coûte en Or
+  std::vector<BuildingName> buildings = {};
 
   /** @brief Calcule le seuil de nourriture nécessaire pour le prochain citoyen
    */
@@ -49,8 +51,13 @@ struct CityData {
 
 struct ProductionOrder {
   UnitName unit = UnitName::None;
-  // BuildingName building = BuildingName::None;
+  BuildingName building = BuildingName::None;
   int cost;  // Coût total en production
+};
+
+struct ProductionAvailable {
+  std::vector<UnitName> units;
+  std::vector<BuildingName> buildings;
 };
 
 class City {
@@ -76,11 +83,15 @@ class City {
   void update_commerce();
   int calculate_maintenance_costs(Yields total) const;
 
+  /** @brief Retourne les différents bâtiments et unités qu'une ville peut
+   * produire */
+  ProductionAvailable production_available() const;
+
   /** @brief Ajoute une unité à la file */
   void push_unit(UnitName unit);
 
-  // /** @brief Ajoute un bâtiment à la file */
-  // void push_building(BuildingName building);
+  /** @brief Ajoute un bâtiment à la file */
+  void push_building(BuildingName building);
 
   int get_id() const { return _id; }
   bool is_capital() const { return _is_capital; }
@@ -102,5 +113,5 @@ class City {
   std::queue<ProductionOrder> _build_queue;
   Player* _player;
   Case* _city_case;
-  std::vector<Case*> _squares_owned;
+  std::vector<Case*> _squares_owned;  // Nombre de cases possédant la ville
 };
