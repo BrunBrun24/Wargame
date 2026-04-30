@@ -3,6 +3,10 @@
 #include <iostream>
 
 Game::Game(int nb_player) : _nb_player(nb_player), _map(nb_player) {}
+Game::Game(const QMap<int, Country>& PaysDesJoueurs): _map(PaysDesJoueurs){
+  _nb_player = PaysDesJoueurs.size();
+}
+
 
 void Game::start_game() {
   // On créer la map
