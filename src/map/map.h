@@ -4,10 +4,10 @@
 #include <vector>
 #include <QMap>
 
+#include "../type.h"
 #include "case.h"
 #include "player.h"
-#include "../type.h"
-#include "map.h"
+
 struct Coordinate {
   int x;
   int y;

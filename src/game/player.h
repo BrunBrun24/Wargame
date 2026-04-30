@@ -45,8 +45,8 @@ class Player {
   void add_city(City* c);
   void remove_city(City* c);
 
-  void add_improvement_resource(ResourceName name) {
-    _improvements_resources[name] += 1;
+  void add_resource(ResourceName name) {
+    _resources[name] += 1;
   };
 
   /** @return Retourne la case où se trouve la capitale */
@@ -57,6 +57,7 @@ class Player {
   std::vector<City*>& get_citys() { return _citys; }
   PlayerIncome& get_income() { return _income; }
   ResourceInventory get_resources() { return _resources; }
+  std::vector<TechnologyName> const get_technologies() { return _technologies; }
 
  private:
   static int _id_counter;
@@ -68,6 +69,5 @@ class Player {
   std::vector<City*> _citys;
   PlayerIncome _income;
   ResourceInventory _resources;  // Nombre de ressources possédant le joueur
-  ResourceInventory
-      _improvements_resources;  // Nombre de bâtiments générant une ressource
+  std::vector<TechnologyName> _technologies;
 };

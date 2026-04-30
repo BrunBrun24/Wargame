@@ -3,8 +3,10 @@
 #include <algorithm>
 #include <iostream>
 
+#include "building_database.h"
 #include "case.h"
 #include "player.h"
+#include "technology.h"
 #include "units.h"
 
 const std::map<city_level, culture_threshold> CITY_CULTURE = {
@@ -44,21 +46,22 @@ City::~City() {
 void City::check_for_expansion() {
   // 1. On définit la portée maximale actuelle basée sur le niveau de culture
   // Niveau 1 = Rayon 1 (voisins directs), Niveau 2 = Rayon 2, etc.
-  int max_range = _data.culture.level;
+  int max_range = this->_data.culture.level;
 
   // 2. On récupère toutes les cases à portée
   std::vector<Case*> potential_cases =
-      _city_case->get_cases_in_range(max_range);
+      this->_city_case->get_cases_in_range(max_range);
 
   for (Case* c : potential_cases) {
     // Si la case n'appartient à personne
     if (c->get_player() == nullptr) {
-      auto it = std::find(_squares_owned.begin(), _squares_owned.end(), c);
+      auto it = std::find(this->_squares_owned.begin(),
+                          this->_squares_owned.end(), c);
 
-      if (it == _squares_owned.end()) {
+      if (it == this->_squares_owned.end()) {
         // On annexe la case
-        _squares_owned.push_back(c);
-        c->set_player(_player);
+        this->_squares_owned.push_back(c);
+        c->set_player(this->_player);
       }
     }
   }
@@ -145,24 +148,38 @@ void City::update_yields() {
   }
 
   // 7. On calcule les rendements nets de la ville
+  // On commence par ajouter les bonus des bâtiments
+  for (BuildingName name : this->_data.buildings) {
+    Yields y = BuildingDatabase::get_info(name).building_stats.yields;
+    total.food *= 1 + y.food;
+    total.production *= 1 + y.production;
+    total.commerce *= 1 + y.commerce;
+    total.culture *= 1 + y.culture;
+    total.science *= 1 + y.science;
+    total.happiness *= 1 + y.happiness;
+    total.health *= 1 + y.health;
+    total.sickness *= 1 + y.sickness;
 
-  // On commence par ajouter les bonus des bâtiments donnant de la santé
-  // Pour pouvoir calculer la nourriture qui dépend de la santé
+    BuildingStats bs = BuildingDatabase::get_info(name).building_stats;
+    total.food += bs.food;
+    total.food += bs.culture;
+    total.food += bs.happiness;
+    total.food += bs.health;
+    total.food += bs.sickness;
+  }
 
   total.food -= calculate_food_consumption(total);
   this->_data.maintenance_costs = calculate_maintenance_costs(total);
 
-  // On ajoute les bonus des bâtiments pour le reste des ressources
-
   // 8. On met met à jour les rendements de la ville
-  this->_data.food.yield = total.food;
-  this->_data.culture.data.yield = total.culture;
-  this->_data.production.yield = total.production;
-  this->_data.commerce.yield = total.commerce;
-  this->_data.science.yield = total.science;
-  this->_data.health_yield = total.health;
-  this->_data.sickness_yield = total.sickness;
-  this->_data.happiness_yield = total.happiness;
+  this->_data.food.yield = static_cast<int>(total.food);
+  this->_data.culture.data.yield = static_cast<int>(total.culture);
+  this->_data.production.yield = static_cast<int>(total.production);
+  this->_data.commerce.yield = static_cast<int>(total.commerce);
+  this->_data.science.yield = static_cast<int>(total.science);
+  this->_data.health_yield = static_cast<int>(total.health);
+  this->_data.sickness_yield = static_cast<int>(total.sickness);
+  this->_data.happiness_yield = static_cast<int>(total.happiness);
 }
 
 void City::update_city() {
@@ -174,15 +191,15 @@ void City::update_city() {
 
 void City::update_food() {
   // 1. On accumule la nourriture générée par la ville
-  _data.food.accumulated += _data.food.yield;
+  this->_data.food.accumulated += this->_data.food.yield;
 
   // 2. Croissance ou Famine
   if (_data.food.accumulated >= _data.get_growth_threshold()) {
-    _data.population++;
-    _data.food.accumulated = 0;
+    this->_data.population++;
+    this->_data.food.accumulated = 0;
   } else if (_data.food.accumulated < 0 && _data.population > 1) {
-    _data.population--;
-    _data.food.accumulated = 0;
+    this->_data.population--;
+    this->_data.food.accumulated = 0;
   }
 }
 
@@ -194,7 +211,7 @@ int City::calculate_food_consumption(Yields total) const {
   // Si pop > limite santé, chaque point au-dessus consomme 1 nourriture de
   // plus
   if (this->_data.population > total.health) {
-    consumption += (this->_data.population - total.health);
+    consumption += (this->_data.population - static_cast<int>(total.health));
   }
 
   return consumption;
@@ -219,16 +236,19 @@ void City::update_production() {
   _data.production.accumulated += _data.production.yield;
 
   // On récupère la production actuelle
-  ProductionOrder element = _build_queue.front();
+  ProductionOrder element = this->_build_queue.front();
 
   // On regarde si la production est finie
   if (_data.production.accumulated >= element.cost) {
     // On regarde si la production concernait une unité ou un bâtiment
     if (element.unit != UnitName::None) {
       Unit* new_unit = Unit::create_unit(element.unit, _player, _city_case);
-      _city_case->add_unit(new_unit);
+      this->_city_case->add_unit(new_unit);
+      element.unit = UnitName::None;
     } else {
       // On ajoute le nouveau bâtiment à la ville
+      this->_data.buildings.push_back(element.building);
+      element.building = BuildingName::None;
     }
 
     // On retire la production
@@ -239,6 +259,82 @@ void City::update_production() {
 
     // On demande au joueur la nouvelle production
   }
+}
+
+ProductionAvailable City::production_available() const {
+  ProductionAvailable pa;
+
+  // On définit la borne max (Explorer est le dernier élément)
+  const int max_unit_idx = static_cast<int>(UnitName::Explorer);
+
+  for (int i = 0; i <= max_unit_idx; ++i) {
+    UnitName unit = static_cast<UnitName>(i);
+
+    // 1. Vérifier les technologies requises
+    const auto& required_techs = UNIT_TECHNOLOGY.at(unit).technologies;
+    const auto& player_techs = this->get_player()->get_technologies();
+
+    bool has_all_techs = true;
+    for (TechnologyName tech : required_techs) {
+      auto it_t = std::find(player_techs.begin(), player_techs.end(), tech);
+
+      if (it_t == player_techs.end()) {
+        has_all_techs = false;  // Une technologie manque
+        break;
+      }
+    }
+
+    // 2. Vérifier les ressources requises
+    bool has_all_resources = true;
+    for (ResourceName resource_req : UNIT_TECHNOLOGY.at(unit).resource) {
+      // On cherche la ressource dans l'inventaire du joueur
+      if (this->get_player()->get_resources()[resource_req] <= 0) {
+        has_all_resources = false;
+        break;  // Il manque au moins une ressource
+      }
+    }
+
+    // 3. Si toutes les conditions sont remplies, on l'ajoute
+    if (has_all_techs) {
+      pa.units.push_back(unit);
+    }
+  }
+
+  // On définit la borne max (Walls est le dernier élément)
+  const int max_building_idx = static_cast<int>(BuildingName::Walls);
+
+  for (int i = 0; i <= max_building_idx; ++i) {
+    BuildingName building = static_cast<BuildingName>(i);
+
+    // 1. Vérifier si le bâtiment est déjà construit dans la ville
+    auto it_b =
+        std::find(_data.buildings.begin(), _data.buildings.end(), building);
+    if (it_b != _data.buildings.end()) {
+      continue;  // Déjà construit, on passe au bâtiment suivant
+    }
+
+    // 2. Vérifier les technologies requises
+    const auto& required_techs =
+        BuildingDatabase::get_info(building).required_tech;
+    const auto& player_techs = this->get_player()->get_technologies();
+
+    bool has_all_techs = true;
+    for (TechnologyName tech : required_techs) {
+      auto it_t = std::find(player_techs.begin(), player_techs.end(), tech);
+
+      if (it_t == player_techs.end()) {
+        has_all_techs = false;  // Une technologie manque
+        break;
+      }
+    }
+
+    // 3. Si toutes les conditions sont remplies, on l'ajoute
+    if (has_all_techs) {
+      pa.buildings.push_back(building);
+    }
+  }
+
+  return pa;
 }
 
 int City::calculate_maintenance_costs(Yields total) const {
@@ -253,6 +349,17 @@ int City::calculate_maintenance_costs(Yields total) const {
            0.2;
 
   return static_cast<int>(costs);
+}
+
+void City::push_unit(UnitName unit) {
+  this->_build_queue.push(
+      {unit, BuildingName::None, UNIT_STATS.at(unit).production});
+}
+
+void City::push_building(BuildingName building) {
+  this->_build_queue.push({UnitName::None, building,
+                           BuildingDatabase::get_info(building)
+                               .building_stats.required_production});
 }
 
 void City::update_commerce() {

@@ -24,7 +24,7 @@ enum class ResourceName {
   None,
 
   // --- Strategic ---
-  Aluminum,
+  Aluminium,
   Coal,
   Copper,
   Horse,
@@ -121,16 +121,113 @@ enum class Color {
 
 extern const std::map<Country, Color> COUNTRY_COLOR;
 
+enum class TechnologyName {
+  AdvancedFlight,
+  Aesthetics,
+  Agriculture,
+  Alphabet,
+  AnimalHusbandry,
+  Archery,
+  Artillery,
+  AssemblyLine,
+  Astronomy,
+  Banking,
+  Biology,
+  BronzeWorking,
+  Calendar,
+  Chemistry,
+  CivilService,
+  CodeOfLaws,
+  Combustion,
+  Communism,
+  Compass,
+  Composites,
+  Computers,
+  Constitution,
+  Construction,
+  Corporation,
+  Currency,
+  Democracy,
+  DivineRight,
+  Drama,
+  Ecology,
+  Economics,
+  Education,
+  Electricity,
+  Engineering,
+  Fascism,
+  Feudalism,
+  FiberOptics,
+  Fishing,
+  Fission,
+  Flight,
+  Fusion,
+  FutureTech,
+  Genetics,
+  Guilds,
+  Gunpowder,
+  HorsebackRiding,
+  Hunting,
+  Industrialism,
+  IronWorking,
+  Laser,
+  Liberalism,
+  Literature,
+  Machinery,
+  Masonry,
+  MassMedia,
+  Mathematics,
+  Medicine,
+  Meditation,
+  MetalCasting,
+  MilitaryScience,
+  MilitaryTradition,
+  Mining,
+  Monarchy,
+  Monotheism,
+  Music,
+  Mysticism,
+  Nationalism,
+  Optics,
+  Paper,
+  Philosophy,
+  Physics,
+  Plastics,
+  Polytheism,
+  Pottery,
+  Priesthood,
+  PrintingPress,
+  Radio,
+  Railroad,
+  Refrigeration,
+  ReplaceableParts,
+  Rifling,
+  Robotics,
+  Rocketry,
+  Sailing,
+  Satellites,
+  ScientificMethod,
+  Stealth,
+  SteamPower,
+  Steel,
+  Superconductors,
+  TheWheel,
+  Theology,
+  Writing
+};
+
+extern const std::map<TechnologyName, std::string> TECHNOLOGY_STRING_NAME;
+
 struct Yields {
-  int food = 0;
-  int production = 0;
-  int commerce = 0;
-  int culture = 0;
-  int science = 0;
-  int happiness = 0;
-  int unhappiness = 0;
-  int health = 0;
-  int sickness = 0;
+  double food = 0;
+  double production = 0;
+  double commerce = 0;
+  double culture = 0;
+  double science = 0;
+  double happiness = 0;
+  double unhappiness = 0;
+  double health = 0;
+  double sickness = 0;
   double defense = 0;
 };
 
@@ -155,37 +252,18 @@ enum class UnitName {
   // Civil
   Settler,
   Worker,
-  FastWorker,
-  Spy,
   WorkBoat,
 
   // Melee
   Warrior,
-  Quechua,
   Swordsman,
-  Jaguar,
-  GallicWarrior,
-  Praetorian,
   Axeman,
-  Phalanx,
-  Vulture,
-  DogSoldier,
   Maceman,
-  Samurai,
-  Berserker,
-  Spearman,
-  Impi,
-  Holkan,
   Pikeman,
-  Landsknecht,
 
   // Gunpowder
   Musketman,
-  Musketeer,
-  Janissary,
-  OromoWarrior,
   Rifleman,
-  Redcoat,
   Grenadier,
   AntiTank,
   Infantry,
@@ -197,39 +275,25 @@ enum class UnitName {
 
   // Archery
   Archer,
-  Skirmisher,
-  Bowman,
   Longbowman,
   Crossbowman,
-  ChoKoNu,
 
   // Mounted
   Chariot,
-  WarChariot,
-  Immortal,
   HorseArcher,
-  NumidianCavalry,
-  Keshik,
-  Knight,
-  CamelArcher,
-  Cataphract,
-  Conquistador,
   Cuirassier,
   Cavalry,
-  Cossack,
   WarElephant,
   BallistaElephant,
 
   // Armored
   Tank,
-  Panzer,
   ModernArmor,
   Gunship,
   MobileSAM,
 
   // Siege
   Catapult,
-  Hwacha,
   Trebuchet,
   Cannon,
   MachineGun,
@@ -240,9 +304,7 @@ enum class UnitName {
   Galley,
   Trireme,
   Caravel,
-  Carrack,
   Galleon,
-  EastIndiaman,
   Privateer,
   Frigate,
   ShipOfTheLine,
@@ -284,6 +346,13 @@ struct UnitStats {
 extern const std::map<UnitName, UnitStats> UNIT_STATS;
 extern const std::map<UnitName, UnitType> UNIT_TYPE;
 extern const std::map<std::string, UnitName> UNIT_STRING_NAME;
+
+struct UnitRequired {
+  std::vector<TechnologyName> technologies;
+  std::vector<ResourceName> resource;
+};
+
+extern const std::map<UnitName, UnitRequired> UNIT_TECHNOLOGY;
 
 struct PowerBonusUnitType {
   UnitType type;
@@ -358,6 +427,52 @@ enum class UnitAction {
   // --- WorkBoat ---
   BuildFishingBoats,
   BuildWhalingBoats,
+};
+
+enum class BuildingName {
+  None,
+  Airport,
+  Aqueduct,
+  Bank,
+  Barracks,
+  BombShelters,
+  BroadcastTower,
+  BuddhistMonastery,
+  Bunker,
+  Castle,
+  ChristianCathedral,
+  ChristianMonastery,
+  ChristianTemple,
+  Citadel,
+  CoalPlant,
+  Colosseum,
+  Courthouse,
+  Drydock,
+  Factory,
+  Forge,
+  Granary,
+  Grocer,
+  Harbor,
+  Hospital,
+  HydroPlant,
+  IndustrialPark,
+  Jail,
+  Laboratory,
+  Levee,
+  Library,
+  Lighthouse,
+  Market,
+  Monument,
+  NuclearPlant,
+  Observatory,
+  PublicTransportation,
+  RecyclingCenter,
+  SecurityBureau,
+  Stable,
+  Supermarket,
+  Theatre,
+  University,
+  Walls
 };
 
 struct Course {
