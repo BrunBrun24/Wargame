@@ -120,35 +120,35 @@ ImprovementName Unit::action_to_improvement(UnitAction action) {
 }
 
 std::string Unit::get_unit_type_name(UnitType type) {
-    switch (type) {
-        case UnitType::Air:
-            return "Air";
-        case UnitType::Archery:
-            return "Archery";
-        case UnitType::Armored:
-            return "Armored";
-        case UnitType::Civil:
-            return "Civil";
-        case UnitType::Gunpowder:
-            return "Gunpowder";
-        case UnitType::Helicopter:
-            return "Helicopter";
-        case UnitType::Melee:
-            return "Melee";
-        case UnitType::Missile:
-            return "Missile";
-        case UnitType::Mounted:
-            return "Mounted";
-        case UnitType::Naval:
-            return "ANavalir";
-        case UnitType::Recon:
-            return "Recon";
-        case UnitType::Siege:
-            return "Siege";
+  switch (type) {
+    case UnitType::Air:
+      return "Air";
+    case UnitType::Archery:
+      return "Archery";
+    case UnitType::Armored:
+      return "Armored";
+    case UnitType::Civil:
+      return "Civil";
+    case UnitType::Gunpowder:
+      return "Gunpowder";
+    case UnitType::Helicopter:
+      return "Helicopter";
+    case UnitType::Melee:
+      return "Melee";
+    case UnitType::Missile:
+      return "Missile";
+    case UnitType::Mounted:
+      return "Mounted";
+    case UnitType::Naval:
+      return "ANavalir";
+    case UnitType::Recon:
+      return "Recon";
+    case UnitType::Siege:
+      return "Siege";
 
-        default:
-            return "Inconnu";
-    }
+    default:
+      return "Inconnu";
+  }
 }
 
 Course Unit::can_move_to(const Case* target_case) {
@@ -718,10 +718,19 @@ void Unit::pillage() {
   // 3. On dissocie l'aménagement du joueur
   case_unit->get_player()->remove_improvement(case_unit);
 
-  // 4. On détruit l'aménagement
+  // 4. On enlève s'il y a une ressource sur la case au joueur
+  ResourceName resource = this->get_case_unit()->get_terrain().resource;
+  if (resource != ResourceName::None) {
+    if (ResourceDatabase::get_info(resource).improvement_bonus.improvement ==
+        improvement) {
+      this->get_player()->sub_resource(resource);
+    }
+  }
+
+  // 5. On détruit l'aménagement
   improvement = ImprovementName::None;
 
-  // 4. On enlève les PMs à l'unité
+  // 6. On enlève les PMs à l'unité
   set_PM(1);
 }
 
@@ -760,11 +769,19 @@ bool Unit::can_build_improvement(ImprovementName name) {
   return false;
 }
 
-void Unit::build_improvement(ImprovementName name) {
-  this->get_case_unit()->get_terrain().improvement = name;
-  
-  // TODO Vérifier si c'est une ressource stratégique Si oui alors l'ajouter dans la classe Joueur
-  // On regarde si la case où l'on à construit le 
+void Unit::build_improvement(ImprovementName improvement) {
+  this->get_case_unit()->get_terrain().improvement = improvement;
+
+  // S'il y a une ressource sur la case ET si l'aménagement pour récupérer la
+  // ressource à été créer Alors ajouter que le joueur possède +1 de cette
+  // ressource
+  ResourceName resource = this->get_case_unit()->get_terrain().resource;
+  if (resource != ResourceName::None) {
+    if (ResourceDatabase::get_info(resource).improvement_bonus.improvement ==
+        improvement) {
+      this->get_player()->add_resource(resource);
+    }
+  }
 
   this->switch_active();
 }
