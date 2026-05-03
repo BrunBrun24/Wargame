@@ -9,6 +9,7 @@
 
 #include "aerial.h"
 #include "case.h"
+#include "city.h"
 #include "improvement_database.h"
 #include "maritime.h"
 #include "player.h"
@@ -257,6 +258,8 @@ void Unit::execute_movement(Course course) {
 
     // On enlève les PM du parcours de l'unité
     this->set_PM(course.PM);
+
+    this->move_to_city(target_case);
     return;
   }
 
@@ -267,6 +270,14 @@ void Unit::execute_movement(Course course) {
   if (!best_defender->is_military()) {
     current_case->remove_unit(this);
     this->_handle_capture_and_move(target_case);
+
+    // On met ses PM à 0
+    this->set_PM_null();
+    this->switch_active();
+
+    // Vérifier s'il y a une ville
+    this->move_to_city(target_case);
+
   } else {
     // Sinon, déclenchement du combat
     this->fight(best_defender);
@@ -281,18 +292,33 @@ void Unit::execute_movement(Course course) {
       // On vérifie si la case est libérée après le combat
       if (target_case->get_units().empty()) {
         target_case->add_unit(this);
+
+        this->set_PM_null();
+        this->switch_active();
+
+        // Vérifier s'il y a une ville
+        this->move_to_city(target_case);
+
       } else {
         Unit* next_defender = target_case->select_best_unit(this);
 
         // Si le défenseur suivant est civil, on capture
         if (!next_defender->is_military()) {
           this->_handle_capture_and_move(target_case);
+
+          this->set_PM_null();
+          this->switch_active();
+
+          // Vérifier s'il y a une ville
+          this->move_to_city(target_case);
+
         } else {
           // Sinon, on reste sur la case de repli
           backtrack_case->add_unit(this);
+          this->set_PM_null();
+          this->switch_active();
         }
       }
-      this->switch_active();
     } else {
       // L'unité est détruite
       current_case->remove_unit(this);
@@ -329,6 +355,20 @@ void Unit::go_to_move(Case* target_case) {
   } else {
     // Si le chemin n'est plus atteignable alors on enlève les ordres
     this->orders = {};
+  }
+}
+
+void Unit::move_to_city(Case* target_case) {
+  City* city = target_case->get_city();
+  if (city != nullptr) {
+    Player* owner = city->get_player();
+
+    if (owner != nullptr) {
+      owner->remove_city(city);
+    }
+
+    delete city;
+    target_case->set_city(nullptr);
   }
 }
 

@@ -122,6 +122,7 @@ enum class Color {
 extern const std::map<Country, Color> COUNTRY_COLOR;
 
 enum class TechnologyName {
+  None,
   AdvancedFlight,
   Aesthetics,
   Agriculture,

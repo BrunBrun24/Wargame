@@ -29,6 +29,7 @@ City::City(Case* city_case, Player* player, bool is_capital)
 
   // Appelez la méthode pour que l'utilisateur choisisse ce qu'il veut
   // construire dans la ville
+  // TODO
 }
 
 City::~City() {
@@ -360,6 +361,11 @@ void City::push_building(BuildingName building) {
   this->_build_queue.push({UnitName::None, building,
                            BuildingDatabase::get_info(building)
                                .building_stats.required_production});
+}
+
+bool City::is_producing() {
+  return !(_build_queue.front().building == BuildingName::None &&
+           _build_queue.front().unit != UnitName::None);
 }
 
 void City::update_commerce() {

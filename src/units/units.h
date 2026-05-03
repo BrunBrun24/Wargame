@@ -38,6 +38,8 @@ class Unit {
    * non ajouter des ordres dans la file d'attente */
   void go_to_move(Case* target_case);
 
+  void move_to_city(Case* target_case);
+
   /** @brief Logique commune de calcul de force modifiée */
   double get_modified_strength_vs(const Unit* opponent,
                                   bool is_attacking) const;
@@ -116,6 +118,11 @@ class Unit {
     if (this->stats.PM == 0) {
       this->switch_active();
     }
+  }
+
+  void set_PM_null() {
+    this->stats.PM = 0;
+    this->switch_active();
   }
 
   int get_id() const { return id; }

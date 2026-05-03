@@ -93,6 +93,8 @@ class City {
   /** @brief Ajoute un bâtiment à la file */
   void push_building(BuildingName building);
 
+  bool is_producing();
+
   int get_id() const { return _id; }
   bool is_capital() const { return _is_capital; }
 

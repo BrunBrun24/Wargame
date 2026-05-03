@@ -20,8 +20,8 @@ Player::~Player() {
     delete u;  // Note: Le destructeur de Unit va appeler remove_unit
   }
 
-  while (!_citys.empty()) {
-    City* c = _citys.back();
+  while (!_cities.empty()) {
+    City* c = _cities.back();
     delete c;
   }
 }
@@ -103,7 +103,7 @@ void Player::initialise_turn() {
   int gold_yield = 0;
 
   // 1. Mets à jour la production des villes et l'income du joueur
-  for (City* city : this->_citys) {
+  for (City* city : this->_cities) {
     city->update_yields();
     city->update_city();
 
@@ -161,33 +161,33 @@ void Player::remove_improvement(Case* c) {
 }
 
 void Player::clear_citys() {
-  for (City* city : _citys) {
+  for (City* city : _cities) {
     if (city != nullptr) {
       delete city;
     }
   }
-  _citys.clear();
+  _cities.clear();
 }
 
 void Player::add_city(City* city) {
   if (city) {
-    _citys.push_back(city);
+    _cities.push_back(city);
   }
 }
 
 void Player::remove_city(City* city) {
   // On cherche l'unité par son ID
-  auto it = std::find_if(_citys.begin(), _citys.end(), [&](City* c) {
+  auto it = std::find_if(_cities.begin(), _cities.end(), [&](City* c) {
     return c->get_id() == city->get_id();
   });
 
-  if (it != _citys.end()) {
-    _citys.erase(it);
+  if (it != _cities.end()) {
+    _cities.erase(it);
   }
 }
 
 Case* Player::get_city_capital() {
-  for (City* c : this->_citys) {
+  for (City* c : this->_cities) {
     if (c->is_capital()) {
       return c->get_city_case();
     }
@@ -196,3 +196,61 @@ Case* Player::get_city_capital() {
   // Si le joueur n'a pas de capital
   return nullptr;
 }
+
+void Player::start_turn() {
+  // 1. Vérification des productions des villes
+  this->_check_city_productions();
+
+  // 2. Vérification de la recherche technologique
+  this->_check_active_research();
+}
+
+// void Player::process_turn_actions() {
+//   // Tant qu'il reste au moins une unité avec des points de mouvement ou des
+//   // actions
+//   while (this->_has_active_units()) {
+//     // TODO
+//     // Ici, on attend l'entrée utilisateur pour sélectionner une unité et lui
+//     // donner un ordre
+//     this->__handle_unit_selection_and_orders();
+//   }
+
+//   std::cout << "Toutes les unités sont inactives. Fin du tour." << std::endl;
+// }
+
+bool Player::has_active_units() const {
+  for (const Unit* unit : this->_units) {
+    if (unit->is_active()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// void Player::_check_city_productions() {
+//   for (City* city : this->_cities) {
+//     // Si la ville n'a plus rien à produire
+//     if (!city->is_producing()) {
+//       std::cout << "La ville " << city->get_id()
+//                 << " n'a plus de production en cours." << std::endl;
+
+//       // TODO
+//       // Demander à l'utilisateur quelle unité/bâtiment il veut construire
+//       ProductionItem* new_item = this->__prompt_user_for_production(city);
+//       // On l'ajoute à la file d'attente
+//       city->push_unit(new_item);
+//       city->push_building(new_item);
+//     }
+//   }
+// }
+
+// void Player::_check_active_research() {
+//   if (this->_current_research == TechnologyName::None) {
+//     std::cout << "Aucune recherche technologique en cours !" << std::endl;
+
+//     // TODO
+//     // On demande à l'utilisateur la technologie à rechercher
+//     TechnologyName tech = this->prompt_user_for_technology();
+//     this->_current_research = tech;
+//   }
+// }
