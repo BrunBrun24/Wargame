@@ -16,6 +16,7 @@ std::map<BuildingName, BuildingInfo> BuildingDatabase::_data = {
   {BuildingName::Citadel, {{TechnologyName::Engineering}, {100, 0, 1, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0}}}},
   {BuildingName::CoalPlant, {{TechnologyName::AssemblyLine}, {150, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0}}}},
   {BuildingName::Colosseum, {{TechnologyName::Construction}, {80, 0, 0, 1, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0}}}},
+  {BuildingName::Courthouse, {{TechnologyName::CodeOfLaws}, {120, 0, 0, 1, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0}}}},
   {BuildingName::Drydock, {{TechnologyName::Steel}, {120, 0, 0, 0, 0, 1, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0}}}},
   {BuildingName::Factory, {{TechnologyName::AssemblyLine}, {250, 0, 0, 0, 0, 1, {0, 0.25, 0, 0, 0, 0, 0, 0, 0, 0.0}}}},
   {BuildingName::Forge, {{TechnologyName::MetalCasting}, {125, 0, 0, 0, 0, 1, {0, 0.25, 0, 0, 0, 0, 0, 0, 0, 0.0}}}},

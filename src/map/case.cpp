@@ -286,7 +286,7 @@ std::string Case::get_description() const {
   if (!_units.empty()) {
     UnitName name = _units[0]->get_name();
 
-    for (const auto& [str, enum_val] : UNIT_STRING_NAME) {
+    for (const auto& [enum_val, str] : UNIT_NAME_TO_STRING) {
       if (enum_val == name) {
         return "Unit";
       }

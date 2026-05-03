@@ -268,7 +268,7 @@ ProductionAvailable City::production_available() const {
   // On définit la borne max (Explorer est le dernier élément)
   const int max_unit_idx = static_cast<int>(UnitName::Explorer);
 
-  for (int i = 0; i <= max_unit_idx; ++i) {
+  for (int i = 1; i <= max_unit_idx; ++i) {
     UnitName unit = static_cast<UnitName>(i);
 
     // 1. Vérifier les technologies requises
@@ -304,7 +304,7 @@ ProductionAvailable City::production_available() const {
   // On définit la borne max (Walls est le dernier élément)
   const int max_building_idx = static_cast<int>(BuildingName::Walls);
 
-  for (int i = 0; i <= max_building_idx; ++i) {
+  for (int i = 1; i <= max_building_idx; ++i) {
     BuildingName building = static_cast<BuildingName>(i);
 
     // 1. Vérifier si le bâtiment est déjà construit dans la ville

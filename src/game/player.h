@@ -43,6 +43,8 @@ class Player {
   void add_city(City* c);
   void remove_city(City* c);
 
+  void add_technology(TechnologyName t) { _technologies.push_back(t); };
+
   /** @return Retourne la case où se trouve la capitale */
   Case* get_city_capital();
 
