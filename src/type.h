@@ -346,7 +346,7 @@ struct UnitStats {
 
 extern const std::map<UnitName, UnitStats> UNIT_STATS;
 extern const std::map<UnitName, UnitType> UNIT_TYPE;
-extern const std::map<std::string, UnitName> UNIT_STRING_NAME;
+extern const std::map<UnitName, std::string> UNIT_NAME_TO_STRING;
 
 struct UnitRequired {
   std::vector<TechnologyName> technologies;

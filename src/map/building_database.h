@@ -23,6 +23,7 @@ struct BuildingInfo {
 class BuildingDatabase {
  public:
   static const BuildingInfo& get_info(BuildingName name) {
+  
     return _data.at(name);
   }
   static std::string get_building_name_str(BuildingName name);

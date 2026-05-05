@@ -281,91 +281,94 @@ const std::map<UnitName, UnitType> UNIT_TYPE = {
     {UnitName::Scout, UnitType::Recon},
     {UnitName::Explorer, UnitType::Recon}};
 
-const std::map<std::string, UnitName> UNIT_STRING_NAME = {
+const std::map<UnitName, std::string> UNIT_NAME_TO_STRING = {
+    {UnitName::None, "Aucune"},
+
     // Civil
-    {"Settler", UnitName::Settler},
-    {"Worker", UnitName::Worker},
-    {"WorkBoat", UnitName::WorkBoat},
+    {UnitName::Settler, "Colon"},
+    {UnitName::Worker, "Ouvrier"},
+    {UnitName::WorkBoat, "Bateau de travail"},
 
     // Melee
-    {"Warrior", UnitName::Warrior},
-    {"Swordsman", UnitName::Swordsman},
-    {"Axeman", UnitName::Axeman},
-    {"Maceman", UnitName::Maceman},
-    {"Pikeman", UnitName::Pikeman},
+    {UnitName::Warrior, "Guerrier"},
+    {UnitName::Swordsman, "Épéiste"},
+    {UnitName::Axeman, "Soldat à la hache"},
+    {UnitName::Maceman, "Fantassin à masse"},
+    {UnitName::Pikeman, "Piquier"},
 
     // Gunpowder
-    {"Musketman", UnitName::Musketman},
-    {"Rifleman", UnitName::Rifleman},
-    {"Grenadier", UnitName::Grenadier},
-    {"AntiTank", UnitName::AntiTank},
-    {"Infantry", UnitName::Infantry},
-    {"SAMInfantry", UnitName::SAMInfantry},
-    {"Marine", UnitName::Marine},
-    {"NavySEAL", UnitName::NavySEAL},
-    {"Paratrooper", UnitName::Paratrooper},
-    {"MechanizedInfantry", UnitName::MechanizedInfantry},
+    {UnitName::Musketman, "Mousquetaire"},
+    {UnitName::Rifleman, "Fusilier"},
+    {UnitName::Grenadier, "Grenadier"},
+    {UnitName::AntiTank, "Antichar"},
+    {UnitName::Infantry, "Infanterie"},
+    {UnitName::SAMInfantry, "Infanterie SAM"},
+    {UnitName::Marine, "Marine"},
+    {UnitName::NavySEAL, "Navy SEAL"},
+    {UnitName::Paratrooper, "Parachutiste"},
+    {UnitName::MechanizedInfantry, "Infanterie mécanisée"},
 
     // Archery
-    {"Archer", UnitName::Archer},
-    {"Longbowman", UnitName::Longbowman},
-    {"Crossbowman", UnitName::Crossbowman},
+    {UnitName::Archer, "Archer"},
+    {UnitName::Longbowman, "Archer long"},
+    {UnitName::Crossbowman, "Arbalétrier"},
 
     // Mounted
-    {"Chariot", UnitName::Chariot},
-    {"HorseArcher", UnitName::HorseArcher},
-    {"Cuirassier", UnitName::Cuirassier},
-    {"Cavalry", UnitName::Cavalry},
-    {"WarElephant", UnitName::WarElephant},
-    {"BallistaElephant", UnitName::BallistaElephant},
+    {UnitName::Chariot, "Char"},
+    {UnitName::HorseArcher, "Archer à cheval"},
+    {UnitName::Cuirassier, "Cuirassier"},
+    {UnitName::Cavalry, "Cavalerie"},
+    {UnitName::WarElephant, "Éléphant de guerre"},
+    {UnitName::BallistaElephant, "Éléphant à baliste"},
 
     // Armored
-    {"Tank", UnitName::Tank},
-    {"ModernArmor", UnitName::ModernArmor},
-    {"Gunship", UnitName::Gunship},
-    {"MobileSAM", UnitName::MobileSAM},
+    {UnitName::Tank, "Char de combat"},
+    {UnitName::ModernArmor, "Blindé moderne"},
+    {UnitName::Gunship, "Hélicoptère de combat"},
+    {UnitName::MobileSAM, "SAM mobile"},
 
     // Siege
-    {"Catapult", UnitName::Catapult},
-    {"Trebuchet", UnitName::Trebuchet},
-    {"Cannon", UnitName::Cannon},
-    {"MachineGun", UnitName::MachineGun},
-    {"Artillery", UnitName::Artillery},
-    {"MobileArtillery", UnitName::MobileArtillery},
+    {UnitName::Catapult, "Catapulte"},
+    {UnitName::Trebuchet, "Trébuchet"},
+    {UnitName::Cannon, "Canon"},
+    {UnitName::MachineGun, "Mitrailleuse"},
+    {UnitName::Artillery, "Artillerie"},
+    {UnitName::MobileArtillery, "Artillerie mobile"},
 
     // Naval
-    {"Galley", UnitName::Galley},
-    {"Trireme", UnitName::Trireme},
-    {"Caravel", UnitName::Caravel},
-    {"Galleon", UnitName::Galleon},
-    {"Privateer", UnitName::Privateer},
-    {"Frigate", UnitName::Frigate},
-    {"ShipOfTheLine", UnitName::ShipOfTheLine},
-    {"Ironclad", UnitName::Ironclad},
-    {"Transport", UnitName::Transport},
-    {"Destroyer", UnitName::Destroyer},
-    {"Battleship", UnitName::Battleship},
-    {"MissileCruiser", UnitName::MissileCruiser},
-    {"StealthDestroyer", UnitName::StealthDestroyer},
-    {"Submarine", UnitName::Submarine},
-    {"AttackSubmarine", UnitName::AttackSubmarine},
-    {"Carrier", UnitName::Carrier},
+    {UnitName::Galley, "Galère"},
+    {UnitName::Trireme, "Trirème"},
+    {UnitName::Caravel, "Caravelle"},
+    {UnitName::Galleon, "Galion"},
+    {UnitName::Privateer, "Corsaire"},
+    {UnitName::Frigate, "Frégate"},
+    {UnitName::ShipOfTheLine, "Vaisseau de ligne"},
+    {UnitName::Ironclad, "Cuirassé à coque en fer"},
+    {UnitName::Transport, "Transport"},
+    {UnitName::Destroyer, "Contre-torpilleur"},
+    {UnitName::Battleship, "Cuirassé"},
+    {UnitName::MissileCruiser, "Croiseur lance-missiles"},
+    {UnitName::StealthDestroyer, "Destroyer furtif"},
+    {UnitName::Submarine, "Sous-marin"},
+    {UnitName::AttackSubmarine, "Sous-marin d'attaque"},
+    {UnitName::Carrier, "Porte-avions"},
 
     // Air
-    {"Airship", UnitName::Airship},
-    {"Fighter", UnitName::Fighter},
-    {"JetFighter", UnitName::JetFighter},
-    {"Bomber", UnitName::Bomber},
-    {"StealthBomber", UnitName::StealthBomber},
+    {UnitName::Airship, "Dirigeable"},
+    {UnitName::Fighter, "Chasseur"},
+    {UnitName::JetFighter, "Chasseur à réaction"},
+    {UnitName::Bomber, "Bombardier"},
+    {UnitName::StealthBomber, "Bombardier furtif"},
 
     // Missile
-    {"GuidedMissile", UnitName::GuidedMissile},
-    {"TacticalNuke", UnitName::TacticalNuke},
-    {"ICBM", UnitName::ICBM},
+    {UnitName::GuidedMissile, "Missile guidé"},
+    {UnitName::TacticalNuke, "Missile nucléaire tactique"},
+    {UnitName::ICBM, "ICBM"},
 
     // Recon
-    {"Scout", UnitName::Scout},
-    {"Explorer", UnitName::Explorer}};
+    {UnitName::Scout, "Éclaireur"},
+    {UnitName::Explorer, "Explorateur"}
+};
 
 const std::map<UnitName, PowerBonus> UNIT_POWER_BONUS = {
     {UnitName::Settler, {{}, {}, {}, {}}},
