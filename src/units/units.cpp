@@ -6,6 +6,7 @@
 #include <queue>
 #include <random>
 #include <unordered_map>
+#include <qDebug>
 
 #include "aerial.h"
 #include "case.h"
@@ -151,7 +152,95 @@ std::string Unit::get_unit_type_name(UnitType type) {
       return "Inconnu";
   }
 }
+Course Unit::can_move_to(const Case* target_case) {
+    // 1. Cas d'arrêt immédiat : déjà sur la case
+    if (this->case_unit == target_case) {
+        return {true, {this->case_unit}, 0.0};
+    }
 
+    double max_mp = this->stats.PM;
+
+    // Utilisation d'une priority_queue pour transformer le BFS en Dijkstra
+    // Format : <coût total, Case*>
+    // std::greater permet d'extraire toujours le coût le plus PETIT en premier
+    using Node = std::pair<double, Case*>;
+    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> pq;
+
+    std::unordered_map<Case*, Case*> parent_map;
+    std::unordered_map<Case*, double> min_cost_map;
+
+    pq.push({0.0, this->case_unit});
+    parent_map[this->case_unit] = nullptr;
+    min_cost_map[this->case_unit] = 0.0;
+
+    Case* reached_target = nullptr;
+    double final_pm_cost = 0.0;
+
+    while (!pq.empty()) {
+        auto [current_cost, current] = pq.top();
+        pq.pop();
+
+        // Si on a déjà trouvé un chemin moins cher pour cette case entre-temps, on ignore
+        if (current_cost > min_cost_map[current]) {
+            continue;
+        }
+
+        // Si on a trouvé la cible
+        if (current == target_case) {
+            reached_target = current;
+            final_pm_cost = current_cost;
+            break; // Avec Dijkstra, le premier arrivé à la cible est le chemin optimal
+        }
+
+        for (Case* neighbor : current->get_neighbors()) {
+            // 1. Terrain autorisé (Terre/Mer/Air)
+            if (!this->find_terrain(neighbor->get_terrain().type)) continue;
+
+            // 2. Montagnes (infranchissables)
+            if (neighbor->get_terrain().elevation == TerrainElevation::Mountain) continue;
+
+            // 3. Unités ennemies (Blocage réel)
+            bool is_blocked = false;
+            for (Unit* u : neighbor->get_units()) {
+                if (u->get_player() != this->get_player() && u->is_military()) {
+                    is_blocked = true;
+                    break;
+                }
+            }
+            // On ne peut pas traverser une unité ennemie, sauf si c'est la cible (pour attaquer)
+            if (is_blocked && neighbor != target_case) continue;
+
+            // 4. Calcul du coût via le terrain
+            double move_cost = neighbor->get_terrain().calculate_PM();
+            double total_cost = current_cost + move_cost;
+
+            // 6. Mise à jour si on trouve un chemin plus court/moins cher
+            if (min_cost_map.find(neighbor) == min_cost_map.end() || total_cost < min_cost_map[neighbor]) {
+                min_cost_map[neighbor] = total_cost;
+                parent_map[neighbor] = current;
+                pq.push({total_cost, neighbor});
+            }
+        }
+    }
+
+    // 2. Reconstruction du chemin
+    if (reached_target) {
+        std::vector<Case*> path;
+        Case* backtrack = reached_target;
+        
+        while (backtrack != nullptr) {     
+            // Utiliser push_back puis reverse est plus performant que insert(begin)
+            path.push_back(backtrack);
+            backtrack = parent_map[backtrack];
+        }
+        std::reverse(path.begin(), path.end());
+        return {true, path, final_pm_cost};
+    }
+
+    qDebug() << "Aucun chemin trouvé dans la limite des PM :" << max_mp;
+    return {false, {}, 0.0};
+}
+/*
 Course Unit::can_move_to(const Case* target_case) {
   // 1. Cas d'arrêt immédiat : déjà sur la case
   if (this->case_unit == target_case) {
@@ -241,7 +330,7 @@ Course Unit::can_move_to(const Case* target_case) {
 
   return {false, {}, 0.0};
 }
-
+*/
 void Unit::execute_movement(Course course) {
   Case* target_case = course.distance_traveled.back();
 
@@ -333,7 +422,7 @@ void Unit::go_to_move(Case* target_case) {
   if (course.is_possible) {
     // On vérifie si l'unité peut y aller en un seul tour
     double unit_PM = this->stats.PM;
-    if (course.distance_traveled.size() < unit_PM) {
+    if (course.distance_traveled.size() <= unit_PM) {
       // Si oui alors on déplace l'unité
       execute_movement(course);
     } else {

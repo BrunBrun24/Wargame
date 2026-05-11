@@ -74,7 +74,7 @@ void MyGLWidget::paintGL() {
 }
 
 void MyGLWidget::renderGame(float aspect) {
-    bool contour = true;
+    bool contour = false;
     bool pays = false;
     float r,g,b;
     if (_mapData == nullptr) {
@@ -127,7 +127,13 @@ void MyGLWidget::renderGame(float aspect) {
         
         if (row % 2 == 1) cx += dx / 2.0f;
         // --- 1. DÉTERMINER LA COULEUR DE REMPLISSAGE ---
-        Country pays_proprietaire = case_actuelle.get_country();
+        Country pays_proprietaire;
+        if (case_actuelle.get_player() != nullptr){
+            pays_proprietaire = case_actuelle.get_player()->get_country();
+        }
+        else{
+            pays_proprietaire = Country::Neutral;
+        }
         // /!/!/surement a changer par un switch car après c'est juste la même chose
         if (COULEURS_PAYS_OPENGL.count(pays_proprietaire) && pays_proprietaire != Country::Neutral) {
             // Si la case appartient à un pays (et n'est pas neutre), on prend sa couleur
@@ -259,6 +265,11 @@ void MyGLWidget::renderGame(float aspect) {
                     // Optionnel : un dessin par défaut si le type est inconnu
                     qDebug() << "Type d'unité inconnu détecté";
                     break;
+            }
+        }
+        else{
+            if (case_actuelle.get_terrain().resource != ResourceName::None){
+                dessinerRessource(cx, cy, radius, aspect);
             }
         }
         
@@ -687,7 +698,26 @@ void MyGLWidget::dessinerDemiCerclePlein(float cx, float cy, float radius, float
         }
     glEnd();
 }
+void MyGLWidget::dessinerRessource(float cx, float cy, float radius, float aspect) {
+    glColor3f(1.0f, 1.0f, 1.0f); // Blanc
+    glLineWidth(2.0f);
+    
+    float s = radius * 0.25f; // Taille de la lettre
+    float rx = cx / aspect;
 
+    glBegin(GL_LINES);
+        // Barre verticale gauche
+        glVertex2f(rx - s, cy - s); glVertex2f(rx - s, cy + s);
+        // Barre du haut
+        glVertex2f(rx - s, cy + s); glVertex2f(rx + s, cy + s);
+        // Barre verticale droite (boucle)
+        glVertex2f(rx + s, cy + s); glVertex2f(rx + s, cy);
+        // Barre du milieu
+        glVertex2f(rx + s, cy);     glVertex2f(rx - s, cy);
+        // Jambe oblique
+        glVertex2f(rx, cy);          glVertex2f(rx + s, cy - s);
+    glEnd();
+}
 
 
 
@@ -717,7 +747,40 @@ QString MyGLWidget::countryToString(Country c) {
 }
 
 void MyGLWidget::mousePressEvent(QMouseEvent *event) {
-    qDebug() << "Click détécté";
+    if (_unitControl && _unitControl->isInterfaceHidden()) { // Il faudra ajouter un getter isInterfaceHidden
+        
+        GridCoord targetCase = getCaseAtMouse(event->pos()); // Ta fonction qui trouve la case sous la souris
+        Unit* selectedUnit = _unitControl->getSelectedUnit();
+
+        if (( selectedUnit != nullptr) && (targetCase.isValid)) {
+            // 2. Appel de ta fonction can_move_to
+            Case* Case_target = &(_mapData->get_cases().at(targetCase.r).at(targetCase.q));
+            Course course = selectedUnit->can_move_to(Case_target);
+
+            if (course.is_possible) {
+                Case* Case_depart = selectedUnit->get_case_unit();
+                selectedUnit->go_to_move(Case_target);
+                _unitControl->deleteLater(); 
+                _unitControl = nullptr;
+                
+                // 3. ON RECRÉE LE CONTROLLEUR SUR LA NOUVELLE CASE
+                // On récupère la liste des unités sur la nouvelle case
+                std::vector<Unit*> unitsOnNewCase = Case_depart->get_units();
+                qDebug() << "nombre unités : ";
+                qDebug() << Case_depart->get_units().size();
+                
+                if (!unitsOnNewCase.empty()) {
+                    _unitControl = new UnitControlPanel(this, unitsOnNewCase, Case_depart);
+                } 
+                else {
+                    qDebug() << "Pas possible.";            
+                }
+                
+            }
+        }
+        update();
+        return;
+    }
     if (this->modeTestCouleurs) {
         float x = (2.0f * event->pos().x()) / width() - 1.0f;
         float y = 1.0f - (2.0f * event->pos().y()) / height();
@@ -732,52 +795,11 @@ void MyGLWidget::mousePressEvent(QMouseEvent *event) {
             qDebug() << "------------------";
         }
     } else {
-        qDebug() << "Click détécté hors modeTestCouleurs";
        if (_mapData == nullptr) return;
 
-        float w = (float)width();
-        float h = (float)height();
-        float aspect = w / h;
-
-        // --- 1. RECALCUL DES PARAMÈTRES DE DESSIN (DOIT ÊTRE IDENTIQUE À RENDERGAME) ---
-        float totalLogicalW = sqrt(3.0f) * (Nombre_Hexagone_Largeur + 0.5f);
-        float totalLogicalH = 1.5f * Nombre_Hexagone_Hauteur + 0.5f;
-        float radiusX = 2.0f * aspect / totalLogicalW;
-        float radiusY = 2.0f / totalLogicalH;
-        float radius = std::min(radiusX, radiusY);
-
-        float dx = radius * sqrt(3.0f);
-        float dy = 1.5f * radius;
-
-        float gridWidth = dx * (Nombre_Hexagone_Largeur - 0.5f);
-        float gridHeight = dy * (Nombre_Hexagone_Hauteur - 1) + 2 * radius;
-        
-        // Coordonnées du centre de la grille (0,0 en OpenGL)
-        float startX = (-gridWidth / 2.0f); 
-        float startY = (gridHeight / 2.0f) - radius;
-
-        // --- 2. POSITION DE LA SOURIS EN COORDONNÉES OPENGL ---
-        float mouseX = ((2.0f * (float)event->x() / w) - 1.0f) * aspect;
-        float mouseY = 1.0f - (2.0f * (float)event->y() / h);
-
-        // --- 3. TRANSFORMATION POUR ALIGNER SUR L'INDEX [0][0] ---
-        // On soustrait startX et startY pour que le clic soit relatif au début de la grille
-        float localX = mouseX - startX;
-        float localY = mouseY - startY;
-
-        // --- 4. CONVERSION EN COORDONNÉES DE GRILLE ---
-        // On utilise la formule inverse de la disposition "Pointy-topped"
-        float r_frac = -localY / dy;
-        
-        // Ajustement pour le décalage horizontal des lignes impaires (row % 2 == 1)
-        int row_check = std::round(r_frac);
-        float offset = (row_check % 2 != 0) ? (dx / 2.0f) : 0.0f;
-        float q_frac = (localX - offset) / dx;
-
-        // --- 5. ARRONDIS ET RÉCUPÉRATION ---
-        int finalR = std::round(r_frac);
-        int finalQ = std::round(q_frac);
-
+        GridCoord coord_case = getCaseAtMouse(event->pos());
+        int finalR = coord_case.r;
+        int finalQ = coord_case.q;
         // Debug pour vérifier les index
         qDebug() << "Index calculé : [" << finalR << "][" << finalQ << "]";
 
@@ -786,17 +808,30 @@ void MyGLWidget::mousePressEvent(QMouseEvent *event) {
             if (finalQ >= 0 && finalQ < (int)allCases[finalR].size()) {
                 Case* clickedCase = const_cast<Case*>(&(allCases.at(finalR).at(finalQ)));
 
-                if (_unitControl) { delete _unitControl; _unitControl = nullptr; }
+                // Nettoyage de l'ancien contrôleur s'il existe
+                if (_unitControl) {
+                    delete _unitControl;
+                    _unitControl = nullptr;
+                }
 
+                // Vérification si la case contient des unités
                 if (clickedCase && !clickedCase->get_units().empty()) {
-                    const Unit* targetUnit = clickedCase->get_units()[0];
-                    _unitControl = new UnitControlPanel(this, targetUnit, clickedCase);
+                    // Récupération du vecteur complet d'unités (std::vector<Unit*>)
+                    const std::vector<Unit*>& unitsOnCase = clickedCase->get_units();
+
+                        // On passe maintenant tout le vecteur au constructeur
+                        _unitControl = new UnitControlPanel(this, unitsOnCase, clickedCase);
+                }
+                else{
+                    if (clickedCase && clickedCase->get_terrain().resource != ResourceName::None){
+                        qDebug() << "On a clické sur une case qui a une ressource mais vu que unitControl ne possède pas de quoi générer sans l'unit Control, on a rien.";
+                        //_unitControl = new UnitControlPanel(this, clickedCase);
+                    }
                 }
             }
         }
         update();
     }
-
 }
 void MyGLWidget::genererMapDeTest() {
     if (!_mapData) return;
@@ -870,3 +905,51 @@ void MyGLWidget::genererMapDeTest() {
 }
 
 
+GridCoord MyGLWidget::getCaseAtMouse(const QPoint& mousePos) {
+    if (!_mapData) return {0, 0, false};
+
+    float w = (float)width();
+    float h = (float)height();
+    float aspect = w / h;
+
+    // --- 1. PARAMÈTRES DE DESSIN ---
+    float totalLogicalW = sqrt(3.0f) * (Nombre_Hexagone_Largeur + 0.5f);
+    float totalLogicalH = 1.5f * Nombre_Hexagone_Hauteur + 0.5f;
+    float radiusX = 2.0f * aspect / totalLogicalW;
+    float radiusY = 2.0f / totalLogicalH;
+    float radius = std::min(radiusX, radiusY);
+
+    float dx = radius * sqrt(3.0f);
+    float dy = 1.5f * radius;
+
+    float gridWidth = dx * (Nombre_Hexagone_Largeur - 0.5f);
+    float gridHeight = dy * (Nombre_Hexagone_Hauteur - 1) + 2 * radius;
+    
+    float startX = (-gridWidth / 2.0f); 
+    float startY = (gridHeight / 2.0f) - radius;
+
+    // --- 2. POSITION DE LA SOURIS EN COORDONNÉES OPENGL ---
+    float mouseX = ((2.0f * (float)mousePos.x() / w) - 1.0f) * aspect;
+    float mouseY = 1.0f - (2.0f * (float)mousePos.y() / h);
+
+    // --- 3. TRANSFORMATION ---
+    float localX = mouseX - startX;
+    float localY = mouseY - startY;
+
+    // --- 4. CONVERSION EN COORDONNÉES DE GRILLE ---
+    float r_frac = -localY / dy;
+    int row_check = std::round(r_frac);
+    float offset = (row_check % 2 != 0) ? (dx / 2.0f) : 0.0f;
+    float q_frac = (localX - offset) / dx;
+
+    int finalR = std::round(r_frac);
+    int finalQ = std::round(q_frac); 
+
+    // --- 5. VÉRIFICATION DES BORNES ET RETOUR ---
+    if (finalR >= 0 && finalR < Nombre_Hexagone_Hauteur &&
+        finalQ >= 0 && finalQ < Nombre_Hexagone_Largeur) {
+        return {finalQ, finalR, true};
+    }
+
+    return {0, 0, false};
+}

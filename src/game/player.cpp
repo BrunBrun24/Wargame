@@ -199,10 +199,10 @@ Case* Player::get_city_capital() {
 
 void Player::start_turn() {
   // 1. Vérification des productions des villes
-  this->_check_city_productions();
+  //this->_check_city_productions();
 
   // 2. Vérification de la recherche technologique
-  this->_check_active_research();
+  //this->_check_active_research();
 }
 
 // void Player::process_turn_actions() {

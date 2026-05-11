@@ -2,4 +2,9 @@ build
 .vscode
 .qtcreator
 .gitignore
+.cache
 CMakeLists.txt
+Inutile_maintenant
+notes.txt
+DebugGfx.h
+DebugGfx.cpp

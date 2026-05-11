@@ -13,3 +13,21 @@ On a décidé d'aller pointe vers le haut pour les hexagone
 => systeme d'argent
 => ajout de mine d'argent
 =>
+
+
+
+
+
+
+=> Problème rencontré dans le dernier rush:
+    =>Le tour par tour je peux pas le tester.
+
+
+=> country dans case.h c'est la couleur des unités,
+=> _player dans case.h c'est la couleur des cases possédées.
+
+
+
+
+
+=> Séparation de OPENGL et QT. Petit QT dans U

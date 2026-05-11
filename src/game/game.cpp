@@ -32,7 +32,7 @@ void Game::turn_by_turn() {
       }
 
       // Phase de jeu
-      this->play(player);
+      //this->play(player);
 
       // Vérification après le tour (au cas où il aurait perdu sa dernière ville
       // pendant le tour adverse)

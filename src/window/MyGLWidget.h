@@ -9,6 +9,11 @@
 using RGB = std::array<float, 3>;
 extern const std::map<Country, RGB> COULEURS_PAYS_OPENGL;
 class UnitControlPanel;
+struct GridCoord {
+    int q;
+    int r;
+    bool isValid;
+};
 
 class MyGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -26,7 +31,7 @@ public:
     void dessinerMounted(float cx, float cy, float radius, float aspect);
     void dessinerMissile(float cx, float cy, float radius, float aspect);
     void dessinerRecon(float cx, float cy, float radius, float aspect); 
-    
+    void dessinerRessource(float cx, float cy, float radius,float aspect);
     QString unitTypeToString(UnitType name);
 
     void setMapPtr(Map* map) {
@@ -51,4 +56,5 @@ protected:
     bool modeTestCouleurs = false;
     void genererMapDeTest();
     UnitControlPanel* _controlPanel;
+    GridCoord getCaseAtMouse(const QPoint& mousePos);
 };
