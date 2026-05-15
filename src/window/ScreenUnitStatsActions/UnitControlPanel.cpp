@@ -6,9 +6,6 @@
 #include <QGridLayout>
 #include <QPushButton>
 
-/**
- * @brief Constructeur avec gestion du masquage et bouton persistant.
- */
 UnitControlPanel::UnitControlPanel(QWidget* parent, const std::vector<Unit*>& units, const Case* currentCase) 
     : QObject(parent), _units(units), _current_case(currentCase), _parent_ref(parent) {
     
@@ -24,7 +21,7 @@ UnitControlPanel::UnitControlPanel(QWidget* parent, const std::vector<Unit*>& un
     _unit_selector->setStyleSheet("background-color: #2c3e50; color: white; padding: 5px; font-weight: bold;");
 
     // 2. Création du bouton de fermeture
-    _close_btn = new QPushButton("×", parent);
+    _close_btn = new QPushButton("x", parent);
     _close_btn->setFixedSize(26, 26);
     _close_btn->setCursor(Qt::PointingHandCursor);
     _close_btn->setStyleSheet(
@@ -75,7 +72,15 @@ void UnitControlPanel::onUnitChanged(int index) {
     _stats_widget->setFixedWidth(250);
     _actions_widget = new UnitActionsWidget(_parent_ref, selectedUnit, _current_case);
     _actions_widget->setFixedHeight(125);
-    connect(_actions_widget, &UnitActionsWidget::moveRequested, this, &UnitControlPanel::hideAll);
+    
+    connect(_actions_widget, &UnitActionsWidget::actionTriggered, this, [this, selectedUnit](UnitAction action) {
+        if (selectedUnit) {
+            selectedUnit->execute_action(action);
+        }
+        
+        this->hideAll();
+    });
+
     if (layout) {
         // On s'assure que le sélecteur est bien dans le layout (au cas où il aurait été caché)
         layout->addWidget(_unit_selector, 0, 0, Qt::AlignTop | Qt::AlignLeft);
@@ -83,7 +88,6 @@ void UnitControlPanel::onUnitChanged(int index) {
         layout->addWidget(_actions_widget, 0, 0, Qt::AlignBottom);
         
         // On affiche TOUT
-        
         showAll();
 
         // REPOSITIONNEMENT CRUCIAL DU BOUTON
@@ -97,6 +101,7 @@ void UnitControlPanel::onUnitChanged(int index) {
     
     _parent_ref->update();
 }
+
 void UnitControlPanel::hideAll() {
     if (_unit_selector) _unit_selector->hide();
     if (_stats_widget) _stats_widget->hide();
@@ -112,6 +117,7 @@ void UnitControlPanel::showAll(){
     _close_btn->show();
     isHidden = false;
 }
+
 Unit* UnitControlPanel::getSelectedUnit() const {
     if (_units.empty()) return nullptr;
     return _units[_unit_selector->currentIndex()];

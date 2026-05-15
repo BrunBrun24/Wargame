@@ -18,7 +18,8 @@ class UnitActionsWidget : public QWidget {
   void paintEvent(QPaintEvent* event);
 
  signals:
-  void moveRequested();
+  void actionTriggered(UnitAction action);
+
  private:
   void _clear_layout();
   void _setup_ui(const Unit* unit, const Case* currentCase);

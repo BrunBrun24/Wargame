@@ -1,5 +1,6 @@
 #include "game.h"
 
+#include <QDebug>
 #include <iostream>
 
 Game::Game(int nb_player) : _nb_player(nb_player), _map(nb_player) {}
@@ -9,79 +10,64 @@ Game::Game(const QMap<int, Country>& PaysDesJoueurs) : _map(PaysDesJoueurs) {
 }
 
 void Game::start_game() {
-  // On créer la map
+  qDebug() << "Game : Démarrage de la génération de la map...";
   _map.create_map();
-  _map.render_debug();
 
-  turn_by_turn();
-}
+  // CRUCIAL : On récupère les joueurs créés par la Map
+  _players_list = _map.get_players();
 
-void Game::turn_by_turn() {
-  std::vector<Player*> players = _map.get_players();
-  int turn_count = 1;
+  _current_player_index = 0;
+  _turn_count = 1;
 
-  while (players.size() > 1) {
-    std::cout << "\n========== TOUR " << turn_count
-              << " ==========" << std::endl;
+  if (!_players_list.empty()) {
+    qDebug() << "--- DÉBUT DE LA PARTIE (TOUR 1) ---";
+    Player* firstPlayer = _players_list[_current_player_index];
 
-    for (auto it = players.begin(); it != players.end();) {
-      Player* player = *it;
-      if (player == nullptr) {
-        it = players.erase(it);
-        continue;
-      }
+    // On initialise le tour du premier joueur (Reset PM etc.)
+    firstPlayer->initialise_turn();
 
-      // Phase de jeu
-      //this->play(player);
-
-      // Vérification après le tour (au cas où il aurait perdu sa dernière ville
-      // pendant le tour adverse)
-      if (player->is_dead()) {
-        std::cout << "Le joueur " << player->get_id() << " a perdu la partie."
-                  << std::endl;
-        it = players.erase(it);  // On le retire de la boucle de jeu
-      } else {
-        ++it;
-      }
-    }
-
-    turn_count++;
-
-    // Condition de victoire
-    if (players.size() == 1) {
-      std::cout << "Le joueur " << players[0]->get_id() << " a gagné !"
-                << std::endl;
-    }
+    qDebug() << "C'est au tour du Joueur ID:" << firstPlayer->get_id()
+             << " Pays:" << static_cast<int>(firstPlayer->get_country());
+  } else {
+    qCritical() << "Erreur : Aucun joueur n'a été trouvé dans la Map !";
   }
 }
 
-// void Game::play(Player* player) {
-//   // 1. Vérification de survie
-//   if (player->is_dead()) {
-//     std::cout << "Le joueur " << player->get_id()
-//               << " n'a plus de villes et est éliminé." << std::endl;
-//     return;
-//   }
+Player* Game::get_current_player() {
+  if (_players_list.empty()) {
+    return nullptr;
+  }
+  return _players_list[_current_player_index];
+}
 
-//   // 2. Initialisation du tour (Production et Technologie)
-//   player->start_turn();
+void Game::next_turn() {
+  if (_players_list.empty()) return;
 
-//   // 3. Phase d'action des unités
-//   // Tant que le joueur a des unités qui peuvent encore bouger ou agir
-//   while (player->has_active_units()) {
-//     std::cout << "En attente d'ordres pour les unités de " << player->get_id()
-//               << "..." << std::endl;
+  // 1. Passage à l'index suivant
+  _current_player_index++;
 
-//     // Ici, tu appelleras ton interface pour sélectionner une unité
-//     // Pour l'instant, on simule ou on attend une commande.
-//     this->_handle_unit_orders(player);
+  // 2. Boucle si on a dépassé le dernier joueur
+  if (_current_player_index >= static_cast<int>(_players_list.size())) {
+    _current_player_index = 0;
+    _turn_count++;
+    qDebug() << "--- TOUS LES JOUEURS ONT JOUÉ | DÉBUT DU TOUR" << _turn_count
+             << " ---";
+  }
 
-//     // Optionnel : permettre de passer le tour manuellement pour sortir de la
-//     // boucle
-//     if (this->_user_wants_to_end_turn()) {
-//       break;
-//     }
-//   }
+  Player* nextPlayer = _players_list[_current_player_index];
 
-//   std::cout << "Fin du tour pour " << player->get_id() << std::endl;
-// }
+  // 3. Gestion de l'élimination (on saute le tour si le joueur n'a plus de
+  // villes) On ne vérifie la défaite qu'après quelques tours pour laisser le
+  // temps de s'installer
+  if (nextPlayer->is_dead() && _turn_count > 1) {
+    qDebug() << "Le joueur" << nextPlayer->get_id()
+             << "est éliminé. Passage au suivant.";
+    next_turn();
+    return;
+  }
+
+  // 4. On réactive les unités du nouveau joueur
+  nextPlayer->initialise_turn();
+
+  qDebug() << "Nouveau tour actif : Joueur" << nextPlayer->get_id();
+}

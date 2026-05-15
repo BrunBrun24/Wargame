@@ -174,13 +174,27 @@ bool Case::is_valid_for_city() const {
 }
 
 void Case::create_city(Player* player) {
-  // Si le joueur n'a pas encore de ville
-  if (this->get_player()->get_citys().size() == 0) {
-    // Alors ça première devient ça capital
+  // 1. Sécurité : On vérifie si le pointeur player est valide
+  if (!player) {
+    return;
+  }
+
+  // 2. Logique : On vérifie les villes du joueur passé en paramètre
+  bool is_first_city = (player->get_citys().empty());
+
+  if (is_first_city) {
+    // La première ville devient la capitale
     _city = new City(this, player, 1);
   } else {
+    // Les suivantes sont des villes normales
     _city = new City(this, player, 0);
   }
+
+  // 3. Mise à jour de la possession de la case
+  this->set_player(player);
+
+  // 4. Enregistrement de la ville chez le joueur
+  player->add_city(_city);
 }
 
 Yields Case::get_total_yields() const {

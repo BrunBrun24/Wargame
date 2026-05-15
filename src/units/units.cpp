@@ -320,10 +320,7 @@ void Unit::go_to_move(Case* target_case) {
       this->orders = {UnitAction::None, 0, nullptr};
     } else {
       qDebug() << "Trajet long : calcul du segment pour ce tour.";
-      Course partial_course = {
-          true,
-          {this->case_unit},
-          0.0};  // On réinclut le départ pour execute_movement
+      Course partial_course = {true, {this->case_unit}, 0.0};
       double accumulated_cost = 0.0;
 
       for (Case* next_step : course.distance_traveled) {
@@ -357,12 +354,11 @@ void Unit::move_to_city(Case* target_case) {
   if (city != nullptr) {
     Player* owner = city->get_player();
 
-    if (owner != nullptr) {
+    if (owner != nullptr && owner != this->player) {
       owner->remove_city(city);
+      delete city;
+      target_case->set_city(nullptr);
     }
-
-    delete city;
-    target_case->set_city(nullptr);
   }
 }
 
@@ -597,14 +593,17 @@ void Unit::execute_action(UnitAction action) {
       break;
 
     case UnitAction::BuildCity:
+      qDebug() << "BUILD CITY";
       this->found_city();
       break;
 
     case UnitAction::BuildFarm:
+      qDebug() << "BUILD CITY";
       this->build_improvement(ImprovementName::Farm);
       break;
 
     case UnitAction::BuildMine:
+      qDebug() << "BUILD CITY";
       this->build_improvement(ImprovementName::Mine);
       break;
 
@@ -673,6 +672,7 @@ void Unit::execute_action(UnitAction action) {
       break;
 
     case UnitAction::BuildFort:
+      qDebug() << "BuildFort";
       this->build_improvement(ImprovementName::Fort);
       break;
 

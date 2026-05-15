@@ -33,12 +33,19 @@ public:
     void dessinerRecon(float cx, float cy, float radius, float aspect); 
     void dessinerRessource(float cx, float cy, float radius,float aspect);
     QString unitTypeToString(UnitType name);
+    void handleUnitSelection(GridCoord coord);
+    void handleUnitMovement(QMouseEvent* event, Unit* selectedUnit);
+
+    void setGamePtr(Game* game) { 
+        _gamePtr = game; 
+    }
 
     void setMapPtr(Map* map) {
         qDebug() << "MyGLWidget : setMapPtr appelé avec l'adresse :" << map;
         _mapData = map; 
         update(); // Force OpenGL à redessiner avec les nouvelles données
     }
+    
 protected:
     void renderGame(float aspect);
     void initializeGL() override;
@@ -57,4 +64,6 @@ protected:
     void genererMapDeTest();
     UnitControlPanel* _controlPanel;
     GridCoord getCaseAtMouse(const QPoint& mousePos);
+
+    Game* _gamePtr; // Pointeur vers l'instance de la logique de jeu
 };

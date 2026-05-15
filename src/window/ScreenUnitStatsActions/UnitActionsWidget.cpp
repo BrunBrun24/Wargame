@@ -56,9 +56,8 @@ void UnitActionsWidget::_setup_ui(const Unit* unit, const Case* currentCase) {
   const UnitName uName = unit->get_name();
 
   // --- ACTIONS UNIVERSELLES ---
-  _create_action_button("Bouger", UnitAction::GoToMove, actionLayout);
-  _create_action_button("Sommeil", UnitAction::Sleep, actionLayout);
-  _create_action_button("Passer", UnitAction::SkipTurn, actionLayout);
+  _create_action_button("Se déplacer", UnitAction::GoToMove, actionLayout);
+  _create_action_button("Passe son tour", UnitAction::Sleep, actionLayout);
   _create_action_button("Supprimer", UnitAction::Delete, actionLayout);
 
   // --- ACTIONS PAR TYPE D'UNITÉ ---
@@ -155,13 +154,8 @@ void UnitActionsWidget::_create_action_button(const QString& text,
       "QPushButton:hover { background-color: #2980b9; }";
   btn->setStyleSheet(btnStyle);
   btn->setCursor(Qt::PointingHandCursor);
-  // Connexion du signal (exemple avec une lambda capturant l'action)
-  connect(btn, &QPushButton::clicked, this, [this, action]() {
-    if (action == UnitAction::GoToMove){
-      emit moveRequested();
-      qDebug() << "MoveRequested";
-    }
-  });
+  connect(btn, &QPushButton::clicked, this,
+          [this, action]() { emit actionTriggered(action); });
 
   layout->addWidget(btn);
 }

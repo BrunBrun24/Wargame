@@ -48,15 +48,18 @@ MainWindow::MainWindow(QWidget *parent)
         stackedWidget->setCurrentWidget(mainMenu);
     });
     connect(setupmenu, &SetupNewGameWindow::gameCreated, this, [=](Game* game) {
-    // 1. On donne la map au widget OpenGL
-        if (!test) {
-            qCritical() << "MainWindow : Le pointeur 'test' (MyGLWidget) est nul !";
-            return;
-        }
+        if (!test) return;
+
+        // 1. Transmettre la Map pour le dessin
         test->setMapPtr(game->getMap());
-        qDebug() << "MainWindow : Pointeur de map transmis au widget OpenGL.";
+        
+        // 2. Transmettre le Game pour la logique (C'EST CE QUI MANQUAIT)
+        test->setGamePtr(game); 
+
+        // 3. Basculer l'affichage vers le jeu
         stackedWidget->setCurrentWidget(test);
-        qDebug() << "transition";
+        
+        qDebug() << "MainWindow : Game et Map transmis au MyGLWidget. Lancement de l'affichage.";
     });
 }
 

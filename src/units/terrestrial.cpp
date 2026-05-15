@@ -1,5 +1,6 @@
 #include "terrestrial.h"
 
+#include <qDebug>
 #include <vector>
 
 #include "case.h"

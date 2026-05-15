@@ -27,7 +27,8 @@ const std::map<Country, RGB> COULEURS_PAYS_OPENGL = {
 
 const std::vector<UnitType> listeTypes = {};
 
-MyGLWidget::MyGLWidget(QWidget* parent) : QOpenGLWidget(parent) {
+MyGLWidget::MyGLWidget(QWidget* parent)
+    : QOpenGLWidget(parent), _gamePtr(nullptr) {
   setFocusPolicy(Qt::StrongFocus);  // Pour le clavier
   setMouseTracking(true);
 
@@ -778,75 +779,99 @@ QString MyGLWidget::countryToString(Country c) {
 }
 
 void MyGLWidget::mousePressEvent(QMouseEvent* event) {
-  if (_mapData == nullptr) return;
+  if (!_mapData || !_gamePtr) return;
 
-  // --- 1. PHASE DE DÉPLACEMENT (Si l'interface est cachée) ---
-  if (_unitControl && _unitControl->isInterfaceHidden()) {
-    GridCoord targetCoord = getCaseAtMouse(event->pos());
-    Unit* selectedUnit = _unitControl->getSelectedUnit();
+  // 1. Si on clique sur un widget enfant (bouton fermer, combo), on stop
+  if (childAt(event->pos())) return;
 
-    if (selectedUnit && targetCoord.isValid) {
-      auto& cases = _mapData->get_cases();
-      Case* caseTarget = &(cases.at(targetCoord.r).at(targetCoord.q));
+  if (_unitControl) {
+    // SÉCURITÉ : Si l'unité n'est plus valide (ex: détruite entre deux clics)
+    if (!_unitControl->getSelectedUnit()) {
+      delete _unitControl;
+      _unitControl = nullptr;
+    } else {
+      GridCoord coord = getCaseAtMouse(event->pos());
+      Case* clickedCase = &(_mapData->get_cases().at(coord.r).at(coord.q));
 
-      Course course = selectedUnit->can_move_to(caseTarget);
+      // Si on clique sur la même case et que c'est visible, on ne fait rien
+      if (_unitControl->get_case() == clickedCase &&
+          !_unitControl->isInterfaceHidden()) {
+        return;
+      }
 
-      if (course.is_possible) {
-        // On déplace l'unité
-        selectedUnit->go_to_move(caseTarget);
-
-        // On détruit l'ancien panel
-        _unitControl->deleteLater();
-        _unitControl = nullptr;
-
-        // IMPORTANT : On recrée le panel sur la case de DESTINATION
-        // pour voir le Warrior à sa nouvelle place
-        std::vector<Unit*> unitsOnNewCase = caseTarget->get_units();
-        if (!unitsOnNewCase.empty()) {
-          _unitControl = new UnitControlPanel(this, unitsOnNewCase, caseTarget);
-        }
-      } else {
-        qDebug()
-            << "Deplacement impossible : PM insuffisants ou terrain bloque.";
-        // Si impossible, on réaffiche juste le menu actuel au lieu de le
-        // laisser caché
-        _unitControl->showAll();
+      // Si c'est caché (mode déplacement), on gère le mouvement
+      if (_unitControl->isInterfaceHidden()) {
+        handleUnitMovement(event, _unitControl->getSelectedUnit());
+        return;
       }
     }
-    update();
+  }
+
+  // 2. Si on arrive ici, on nettoie l'ancien panel avant d'en créer un nouveau
+  if (_unitControl) {
+    delete _unitControl;
+    _unitControl = nullptr;
+  }
+
+  GridCoord coord = getCaseAtMouse(event->pos());
+  if (coord.isValid) {
+    handleUnitSelection(coord);
+  }
+  update();
+}
+
+void MyGLWidget::handleUnitSelection(GridCoord coord) {
+  auto& allCases = _mapData->get_cases();
+  Case* clickedCase = &(allCases.at(coord.r).at(coord.q));
+  Player* currentPlayer = _gamePtr->get_current_player();
+
+  // SÉCURITÉ : Si on clique sur la MÊME case que le panel actuel, on ne fait
+  // rien (Cela permet au QComboBox du panel de garder la main)
+  if (_unitControl && _unitControl->get_case() == clickedCase) {
     return;
   }
 
-  // --- 2. PHASE DE SÉLECTION (Clic normal sur la carte) ---
-  GridCoord coordCase = getCaseAtMouse(event->pos());
-  if (!coordCase.isValid) return;
-
-  auto& allCases = _mapData->get_cases();
-  Case* clickedCase = &(allCases.at(coordCase.r).at(coordCase.q));
-
-  // Nettoyage de l'ancien panel
+  // Si on clique ailleurs, on nettoie l'ancien panel
   if (_unitControl) {
     delete _unitControl;
     _unitControl = nullptr;
   }
 
   if (clickedCase && !clickedCase->get_units().empty()) {
-    const std::vector<Unit*>& unitsOnCase = clickedCase->get_units();
-
-    // On ne sélectionne que les unités du joueur local qui sont ACTIVES
     std::vector<Unit*> selectableUnits;
-    for (Unit* u : unitsOnCase) {
-      // u->is_active() est vrai si l'unité a encore des PM
-      if (u->is_active()) {
+    for (Unit* u : clickedCase->get_units()) {
+      if (u->get_player() == currentPlayer && u->is_active()) {
         selectableUnits.push_back(u);
       }
     }
 
     if (!selectableUnits.empty()) {
       _unitControl = new UnitControlPanel(this, selectableUnits, clickedCase);
-    } else {
-      qDebug() << "Toutes les unités sur cette case ont déjà joué.";
     }
+  }
+  update();
+}
+
+void MyGLWidget::handleUnitMovement(QMouseEvent* event, Unit* selectedUnit) {
+  GridCoord targetCoord = getCaseAtMouse(event->pos());
+
+  if (!selectedUnit || !targetCoord.isValid) return;
+
+  auto& cases = _mapData->get_cases();
+  Case* caseTarget = &(cases.at(targetCoord.r).at(targetCoord.q));
+  Course course = selectedUnit->can_move_to(caseTarget);
+
+  if (course.is_possible) {
+    selectedUnit->go_to_move(caseTarget);
+
+    // Nettoyage de l'interface après mouvement
+    if (_unitControl) {
+      delete _unitControl;
+      _unitControl = nullptr;
+    }
+  } else {
+    qDebug() << "Déplacement impossible.";
+    if (_unitControl) _unitControl->showAll();
   }
   update();
 }

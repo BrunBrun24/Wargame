@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMap>
+#include <vector>
 
 #include "map.h"
 #include "player.h"
@@ -10,22 +11,23 @@ class Unit;
 class Game {
  public:
   Game(int nb_player);
-  // Un Game qui prend une liste de pays pour les joueurs. Game(Country*
-  // Joueurs);
   Game(const QMap<int, Country>& PaysDesJoueurs);
-  void start_game();
-  void turn_by_turn();
-  void play(Player* player);
-  Map* getMap() { return &_map; }
 
-  void update_input(Player* player);
-  void next_unit(Player* player);
-  
-  signals:
-    bool user_clicked_on_screen();
-    Unit* get_unit_at_click();
+  /** @brief Initialise la carte et récupère les joueurs. */
+  void start_game();
+
+  /** @brief Passe au joueur suivant et initialise son tour. */
+  void next_turn();
+
+  /** @return Le pointeur vers le joueur actif. */
+  Player* get_current_player();
+
+  Map* getMap() { return &_map; }
 
  private:
   int _nb_player;
   Map _map;
+  int _current_player_index = 0;
+  int _turn_count = 1;
+  std::vector<Player*> _players_list;
 };
