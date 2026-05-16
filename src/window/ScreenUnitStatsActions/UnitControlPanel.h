@@ -3,6 +3,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
+#include "../../type.h"
 
 class Case;
 class Unit;
@@ -20,6 +21,9 @@ class UnitControlPanel : public QObject {
   void showAll();
   Unit* getSelectedUnit() const;
   const Case* get_case() const { return _current_case; }
+
+  signals:
+    void actionRelayed(UnitAction action);
 
  private slots:
   void onUnitChanged(int index);

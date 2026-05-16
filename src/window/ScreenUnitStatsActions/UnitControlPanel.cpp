@@ -77,7 +77,8 @@ void UnitControlPanel::onUnitChanged(int index) {
         if (selectedUnit) {
             selectedUnit->execute_action(action);
         }
-        
+        qDebug() << static_cast<int>(action);
+        emit actionRelayed(action);
         this->hideAll();
     });
 

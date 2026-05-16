@@ -589,9 +589,9 @@ void Unit::get_order(UnitAction action, Case* target_case) {
 
 void Unit::execute_action(UnitAction action) {
   switch (action) {
+
     case UnitAction::BuildRoad:
       break;
-
     case UnitAction::BuildCity:
       qDebug() << "BUILD CITY";
       this->found_city();

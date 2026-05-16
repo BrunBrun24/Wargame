@@ -64,6 +64,6 @@ protected:
     void genererMapDeTest();
     UnitControlPanel* _controlPanel;
     GridCoord getCaseAtMouse(const QPoint& mousePos);
-
+    UnitAction Action_en_cours;
     Game* _gamePtr; // Pointeur vers l'instance de la logique de jeu
 };
