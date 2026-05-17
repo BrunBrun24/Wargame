@@ -139,7 +139,9 @@ void MyGLWidget::renderGame(float aspect) {
         // OPTIONNEL : On peut éclaircir un peu la couleur pour le remplissage
         // pour que ce soit moins agressif que le contour
         glColor3f(rgb[0], rgb[1], rgb[2]);
-      } else if (case_actuelle.get_terrain().type == TerrainsType::Coast) {
+      } else if (case_actuelle.get_terrain().elevation == TerrainElevation::Mountain){
+        glColor3f(0.0f,0.0f,0.0f);
+      }else if (case_actuelle.get_terrain().type == TerrainsType::Coast) {
         glColor3f(0.01953125f, 0.9765625f, 0.75390625f);
       } else if (case_actuelle.get_terrain().type == TerrainsType::Desert) {
         glColor3f(0.99609375f, 0.92578125f, 0.30078125f);
@@ -802,10 +804,6 @@ void MyGLWidget::mousePressEvent(QMouseEvent* event) {
   // Si aucune action alors :
   if (Action_en_cours == UnitAction::None ||
       Action_en_cours == UnitAction::BuildCity) {
-    if (_unitControl) {
-      delete _unitControl;
-      _unitControl = nullptr;
-    }
 
     GridCoord coord = getCaseAtMouse(event->pos());
     if (coord.isValid) {
@@ -829,8 +827,14 @@ void MyGLWidget::handleUnitSelection(GridCoord coord) {
   Case* clickedCase = &(_mapData->get_cases().at(coord.r).at(coord.q));
   Player* currentPlayer = _gamePtr->get_current_player();
 
-  if (_unitControl && _unitControl->get_case() == clickedCase) {
-    return;  // Sécurité déjà présente
+  if ((_unitControl && _unitControl->get_case() == clickedCase) || (currentPlayer != clickedCase->get_units().at(0)->get_player())) {
+    qDebug() << "ICI ";
+    return;  
+  }
+
+  if (_unitControl) {
+    delete _unitControl;
+    _unitControl = nullptr;
   }
 
   if (clickedCase && !clickedCase->get_units().empty()) {
@@ -843,17 +847,24 @@ void MyGLWidget::handleUnitSelection(GridCoord coord) {
 
     if (!selectableUnits.empty()) {
       _unitControl = new UnitControlPanel(this, selectableUnits, clickedCase);
+      connect(_unitControl, &UnitControlPanel::Close_Control_Panel, this, [this](){
+        _unitControl->hide();
+        _unitControl->deleteLater();
+        _unitControl = nullptr;
+        qDebug() << "On close l'unitControl";
+      });
+      connect(_unitControl, &UnitControlPanel::actionRelayed, this,
+          [this](UnitAction action) {
+            Action_en_cours = action;
+            qDebug() << "ON RECUPERE BIEN L'ACTION";
+          });
     } else {
       qDebug() << "[Selection] Aucune unité active/jouable sur cette case.";
     }
   } else {
     qDebug() << "[Selection] Case vide.";
   }
-  connect(_unitControl, &UnitControlPanel::actionRelayed, this,
-          [this](UnitAction action) {
-            Action_en_cours = action;
-            qDebug() << "ON RECUPERE BIEN L'ACTION";
-          });
+  
   update();
 }
 

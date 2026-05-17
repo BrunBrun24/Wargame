@@ -42,7 +42,7 @@ UnitControlPanel::UnitControlPanel(QWidget* parent, const std::vector<Unit*>& un
     
     // Action de fermeture : cache tout directement
     connect(_close_btn, &QPushButton::clicked, this, [this]() {
-        hideAll();
+        emit Close_Control_Panel();
     });
     
     // Charger la première unité

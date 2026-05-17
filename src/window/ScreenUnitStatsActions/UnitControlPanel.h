@@ -21,13 +21,14 @@ class UnitControlPanel : public QObject {
   void showAll();
   Unit* getSelectedUnit() const;
   const Case* get_case() const { return _current_case; }
+  void hide() { this->hideAll();}
 
   signals:
     void actionRelayed(UnitAction action);
-
+    void Close_Control_Panel();
  private slots:
-  void onUnitChanged(int index);
-  void hideAll();  // Slot pour masquer
+    void onUnitChanged(int index);
+    void hideAll();  // Slot pour masquer
 
  private:
   bool isHidden;
