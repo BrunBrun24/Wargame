@@ -389,18 +389,13 @@ enum class UnitAction {
 
   // --- All ---
   Sleep,
-  SkipTurn,
   Delete,
   Wake,
   GoToMove,
-  RegroupUnit,
-  RegroupSameUnit,
 
   // --- Unité Terrestre ---
   Fortify,    // Mise en garde
-  UnFortify,  // Mise en garde
   Pillage,
-  Bombard,  // Affaiblir les défenses d'une ville
 
   // --- Settler ---
   BuildCity,

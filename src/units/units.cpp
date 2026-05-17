@@ -236,66 +236,72 @@ Course Unit::can_move_to(const Case* target_case) {
 }
 
 void Unit::execute_movement(Course course) {
-  // Si le chemin ne contient que la destination (parce que le départ a été
-  // filtré) On récupère le départ via this->case_unit
   if (course.distance_traveled.empty()) return;
 
   Case* target_case = course.distance_traveled.back();
   Case* current_case = this->case_unit;
 
-  // On détermine la case de repli (backtrack)
-  // Si le chemin a 1 seule case (la cible), le repli est la case actuelle
+  // Détermination de la case de repli (backtrack)
   Case* backtrack_case =
       (course.distance_traveled.size() >= 2)
           ? course.distance_traveled[course.distance_traveled.size() - 2]
           : current_case;
 
+  // --- LOGIQUE DE DÉPLACEMENT DE BASE ---
+  auto perform_move = [this](Case* old_c, Case* new_c) {
+    if (old_c) old_c->remove_unit(this);
+    new_c->add_unit(this);
+    this->set_unit_case(
+        new_c);  // CRUCIAL : Met à jour le pointeur interne de l'unité
+  };
+
   // Cas 1 : Case libre, neutre ou alliée
   if (target_case->get_units().empty() ||
       target_case->get_player() == this->player) {
     qDebug() << "Case libre, neutre ou alliée";
-    current_case->remove_unit(this);
-    target_case->add_unit(this);
+    perform_move(current_case, target_case);
     this->set_PM(course.PM);
-    this->move_to_city(target_case);
     return;
   }
 
   // Cas 2 : Présence d'unités ennemies
   Unit* best_defender = target_case->select_best_unit(this);
-  qDebug() << "Présence d'unités ennemies";
+  if (!best_defender) return;  // Sécurité
 
   if (!best_defender->is_military()) {
-    // Capture automatique des civils/ouvriers
-    current_case->remove_unit(this);
+    // Capture automatique des civils
+    perform_move(current_case, target_case);
     this->_handle_capture_and_move(target_case);
-    this->set_PM_null();  // Consomme tout le tour après une capture
-    this->move_to_city(target_case);
+    this->set_PM_null();
   } else {
     // Combat contre unité militaire
     this->fight(best_defender);
 
     if (best_defender->get_stats().hp <= 0) {
+      // Le défenseur est mort, on le nettoie
       delete best_defender;
-      current_case->remove_unit(this);
 
-      // On vérifie s'il reste d'autres défenseurs militaires sur la case
+      // On vérifie s'il reste d'autres militaires
       Unit* next_defender = target_case->select_best_unit(this);
       if (!next_defender || !next_defender->is_military()) {
-        // Si la case est "nettoyée" ou ne contient que des civils
+        // La case est libre de militaires, on avance
+        perform_move(current_case, target_case);
         this->_handle_capture_and_move(target_case);
-        this->move_to_city(target_case);
       } else {
-        // Si d'autres militaires sont encore là, on avance sur la case de repli
-        backtrack_case->add_unit(this);
+        // Il reste des troupes, on avance seulement sur la case de repli
+        perform_move(current_case, backtrack_case);
       }
       this->set_PM_null();
     } else {
-      // Si l'attaquant meurt, il est supprimé par la logique de fight() ou ici
-      if (this->get_stats().hp <= 0) {
-        current_case->remove_unit(this);
+      // Si l'attaquant survit mais n'a pas gagné, il reste sur sa case (ou
+      // meurt)
+      if (this->stats.hp <= 0) {
+        if (current_case) current_case->remove_unit(this);
         delete this;
+        return;
       }
+      // L'attaquant est toujours en vie mais n'a pas pris la case
+      // On ne fait rien, il reste sur current_case
     }
   }
 }
@@ -306,7 +312,7 @@ void Unit::go_to_move(Case* target_case) {
   if (course.is_possible) {
     double current_available_PM = this->stats.PM;
 
-    // Trouver la première case du chemin (index 0 car vous avez supprimé la
+    // Trouver la première case du chemin (index 0 car on a supprimé la
     // case de départ de la liste)
     double cost_first_step =
         course.distance_traveled[0]->get_terrain().calculate_PM();
@@ -491,13 +497,11 @@ bool Unit::find_terrain(const TerrainsType& target_terrain) const {
   return it != allow_terrain.end();
 }
 
-std::vector<UnitAction> Unit::get_unit_actions() {
+std::vector<UnitAction> Unit::get_unit_actions() const {
   std::vector<UnitAction> available_actions;
-  available_actions.push_back(UnitAction::SkipTurn);
-  available_actions.push_back(UnitAction::Delete);
   available_actions.push_back(UnitAction::GoToMove);
-  available_actions.push_back(UnitAction::RegroupUnit);
-  available_actions.push_back(UnitAction::RegroupSameUnit);
+  available_actions.push_back(UnitAction::Sleep);
+  available_actions.push_back(UnitAction::Delete);
 
   if (this->on_guard) {
     available_actions.push_back(UnitAction::Wake);
@@ -506,16 +510,11 @@ std::vector<UnitAction> Unit::get_unit_actions() {
   return available_actions;
 }
 
-void Unit::get_order(UnitAction action, Case* target_case) {
+void Unit::get_order(UnitAction action) {
   switch (action) {
-    case UnitAction::SkipTurn:
-      this->switch_active();
-      break;
-
     case UnitAction::Sleep:
     case UnitAction::Wake:
     case UnitAction::Fortify:
-    case UnitAction::UnFortify:
       this->switch_on_guard();
       this->switch_active();
       break;
@@ -527,21 +526,13 @@ void Unit::get_order(UnitAction action, Case* target_case) {
       }
       break;
 
-    case UnitAction::GoToMove:
-      go_to_move(target_case);
-      break;
-
-    case UnitAction::RegroupUnit:
-      break;
-
-    case UnitAction::RegroupSameUnit:
-      break;
-
     case UnitAction::Pillage:
       pillage();
       break;
 
-    case UnitAction::Bombard:
+    case UnitAction::BuildCity:
+      qDebug() << "BUILD CITY";
+      this->found_city();
       break;
 
     case UnitAction::BuildRoad:
@@ -589,21 +580,21 @@ void Unit::get_order(UnitAction action, Case* target_case) {
 
 void Unit::execute_action(UnitAction action) {
   switch (action) {
-
     case UnitAction::BuildRoad:
       break;
+
     case UnitAction::BuildCity:
       qDebug() << "BUILD CITY";
       this->found_city();
       break;
 
     case UnitAction::BuildFarm:
-      qDebug() << "BUILD CITY";
+      qDebug() << "BUILD Farm";
       this->build_improvement(ImprovementName::Farm);
       break;
 
     case UnitAction::BuildMine:
-      qDebug() << "BUILD CITY";
+      qDebug() << "BUILD Mine";
       this->build_improvement(ImprovementName::Mine);
       break;
 

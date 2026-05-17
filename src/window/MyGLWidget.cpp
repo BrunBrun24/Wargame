@@ -31,7 +31,7 @@ MyGLWidget::MyGLWidget(QWidget* parent)
     : QOpenGLWidget(parent), _gamePtr(nullptr) {
   setFocusPolicy(Qt::StrongFocus);  // Pour le clavier
   setMouseTracking(true);
-  
+
   this->setLayout(new QGridLayout(this));
 }
 
@@ -79,7 +79,6 @@ void MyGLWidget::renderGame(float aspect) {
   }
   static bool firstDraw = true;
   if (firstDraw) {
-    qDebug() << "MyGLWidget : Premier rendu paintGL commencé avec succès.";
     firstDraw = false;
   }
   // Paramètres de ta grille
@@ -744,10 +743,28 @@ void MyGLWidget::dessinerRessource(float cx, float cy, float radius,
 }
 
 void MyGLWidget::keyPressEvent(QKeyEvent* event) {
-  if (event->key() == Qt::Key_T) {
-    qDebug() << "Destruction de la map pour test de couleurs...";
-    modeTestCouleurs = true;
-    genererMapDeTest();
+  // On vérifie si le pointeur vers le jeu est valide
+  if (!_gamePtr) {
+    event->ignore();
+    return;
+  }
+
+  switch (event->key()) {
+    case Qt::Key_Space:
+      qDebug() << "Touche Espace pressée : Fin du tour.";
+      _gamePtr->next_turn();
+
+      // On force la mise à jour du rendu pour refléter les changements
+      update();
+      break;
+
+    case Qt::Key_T:
+      qDebug() << "Destruction de la map pour test de couleurs...";
+      modeTestCouleurs = true;
+      genererMapDeTest();
+
+    default:
+      break;
   }
 }
 
@@ -779,75 +796,41 @@ QString MyGLWidget::countryToString(Country c) {
 }
 
 void MyGLWidget::mousePressEvent(QMouseEvent* event) {
-  qDebug() << "[Debut debug]";
-  qDebug() << "voici l'action en cours ici : ";
-  qDebug() << static_cast<int>(Action_en_cours);
-  qDebug() << "[Fin debug]";
-    if (!_mapData || !_gamePtr) {
-      qDebug() << "Problème?";
+  if (!_mapData || !_gamePtr) {
+    return;
+  }
+  // Si aucune action alors :
+  if (Action_en_cours == UnitAction::None ||
+      Action_en_cours == UnitAction::BuildCity) {
+    if (_unitControl) {
+      delete _unitControl;
+      _unitControl = nullptr;
+    }
+
+    GridCoord coord = getCaseAtMouse(event->pos());
+    if (coord.isValid) {
+      handleUnitSelection(coord);
+    }
+    update();
+    return;
+  }
+
+  // 2. Gestion du Panel et des Actions
+  if (Action_en_cours == UnitAction::GoToMove) {
+    if (Action_en_cours == UnitAction::GoToMove) {
+      handleUnitMovement(event, _unitControl->getSelectedUnit());
+      Action_en_cours = UnitAction::None;
       return;
     }
-    //si aucune action alors : 
-    if (Action_en_cours == UnitAction::None){
-      qDebug() << "[DEBUG] : Action_en_Cours = none";
-      if (_unitControl) {
-              delete _unitControl;
-              _unitControl = nullptr;
-          }
-
-          GridCoord coord = getCaseAtMouse(event->pos());
-          if (coord.isValid) {
-              handleUnitSelection(coord);
-          }
-          update();
-          return;
-    }
-
-    // 1. Détection clic sur un widget enfant
-    /*QWidget* child = childAt(event->pos());
-    
-    // ON NE BLOQUE QUE SI : l'interface est visible ET qu'on n'est pas en train de vouloir bouger
-    if (child && child->isVisible() && Action_en_cours != UnitAction::GoToMove) {
-        if (qobject_cast<QPushButton*>(child)) return; 
-    }*/
-
-    // 2. Gestion du Panel et des Actions
-    
-      qDebug() << "voila ici;";
-      qDebug() << static_cast<int>(Action_en_cours);
-      if (Action_en_cours == UnitAction::GoToMove){
-        handleUnitMovement(event, _unitControl->getSelectedUnit());
-            Action_en_cours = UnitAction::None;
-            return;
-      }
-    
-    /*if (_unitControl) {
-        // Mode mouvement activé par le bouton "Bouger"
-        if (Action_en_cours == UnitAction::GoToMove) {
-            
-            return; 
-        }
-
-        // Si on clique sur la même case que l'unité sélectionnée (pour garder le menu ouvert)
-        GridCoord coord = getCaseAtMouse(event->pos());
-        if (coord.isValid) {
-            Case* clickedCase = &(_mapData->get_cases().at(coord.r).at(coord.q));
-            if (_unitControl->get_case() == clickedCase && !_unitControl->isInterfaceHidden()) {
-                return; 
-            }
-        }
-    }*/
-
-    // 3. Sélection classique (si on arrive ici, c'est qu'on a cliqué à côté ou qu'on ne bougeait pas)
+  }
 }
 
 void MyGLWidget::handleUnitSelection(GridCoord coord) {
-  
   Case* clickedCase = &(_mapData->get_cases().at(coord.r).at(coord.q));
   Player* currentPlayer = _gamePtr->get_current_player();
 
   if (_unitControl && _unitControl->get_case() == clickedCase) {
-    return; // Sécurité déjà présente
+    return;  // Sécurité déjà présente
   }
 
   if (clickedCase && !clickedCase->get_units().empty()) {
@@ -859,7 +842,6 @@ void MyGLWidget::handleUnitSelection(GridCoord coord) {
     }
 
     if (!selectableUnits.empty()) {
-      qDebug() << "[Selection] Création du panel pour" << selectableUnits.size() << "unités.";
       _unitControl = new UnitControlPanel(this, selectableUnits, clickedCase);
     } else {
       qDebug() << "[Selection] Aucune unité active/jouable sur cette case.";
@@ -867,37 +849,38 @@ void MyGLWidget::handleUnitSelection(GridCoord coord) {
   } else {
     qDebug() << "[Selection] Case vide.";
   }
-  connect(_unitControl, &UnitControlPanel::actionRelayed, this, [this](UnitAction action) {
-        Action_en_cours = action;
-        qDebug() << "ON RECUPERE BIEN L'ACTION";
-    });
+  connect(_unitControl, &UnitControlPanel::actionRelayed, this,
+          [this](UnitAction action) {
+            Action_en_cours = action;
+            qDebug() << "ON RECUPERE BIEN L'ACTION";
+          });
   update();
 }
 
 void MyGLWidget::handleUnitMovement(QMouseEvent* event, Unit* selectedUnit) {
-    GridCoord targetCoord = getCaseAtMouse(event->pos());
-    if (!selectedUnit || !targetCoord.isValid) return;
+  GridCoord targetCoord = getCaseAtMouse(event->pos());
+  if (!selectedUnit || !targetCoord.isValid) return;
 
-    auto& cases = _mapData->get_cases();
-    Case* caseTarget = &(cases.at(targetCoord.r).at(targetCoord.q));
+  auto& cases = _mapData->get_cases();
+  Case* caseTarget = &(cases.at(targetCoord.r).at(targetCoord.q));
 
-    // Utilisation de auto pour éviter l'erreur "not a member of Unit"
-    auto course = selectedUnit->can_move_to(caseTarget);
+  // Utilisation de auto pour éviter l'erreur "not a member of Unit"
+  auto course = selectedUnit->can_move_to(caseTarget);
 
-    if (course.is_possible) {
-        selectedUnit->go_to_move(caseTarget);
+  if (course.is_possible) {
+    selectedUnit->go_to_move(caseTarget);
 
-        // Nettoyage de l'interface après mouvement
-        if (_unitControl) {
-            delete _unitControl;
-            _unitControl = nullptr;
-        }
-        Action_en_cours = UnitAction::None; // On reset l'action
-    } else {
-        qDebug() << "Déplacement impossible.";
-        if (_unitControl) _unitControl->showAll();
+    // Nettoyage de l'interface après mouvement
+    if (_unitControl) {
+      delete _unitControl;
+      _unitControl = nullptr;
     }
-    update();
+    Action_en_cours = UnitAction::None;  // On reset l'action
+  } else {
+    qDebug() << "Déplacement impossible.";
+    if (_unitControl) _unitControl->showAll();
+  }
+  update();
 }
 
 void MyGLWidget::genererMapDeTest() {

@@ -75,9 +75,8 @@ void UnitControlPanel::onUnitChanged(int index) {
     
     connect(_actions_widget, &UnitActionsWidget::actionTriggered, this, [this, selectedUnit](UnitAction action) {
         if (selectedUnit) {
-            selectedUnit->execute_action(action);
+            selectedUnit->get_order(action);
         }
-        qDebug() << static_cast<int>(action);
         emit actionRelayed(action);
         this->hideAll();
     });

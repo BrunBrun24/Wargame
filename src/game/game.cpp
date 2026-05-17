@@ -13,7 +13,6 @@ void Game::start_game() {
   qDebug() << "Game : Démarrage de la génération de la map...";
   _map.create_map();
 
-  // CRUCIAL : On récupère les joueurs créés par la Map
   _players_list = _map.get_players();
 
   _current_player_index = 0;

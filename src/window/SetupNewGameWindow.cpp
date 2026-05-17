@@ -236,7 +236,4 @@ void SetupNewGameWindow::lancerLaPartie()
     qDebug() << "Le jeu a été initialisé avec succès !";
     
     emit gameCreated(maPartie);
-    // Note : Pour l'instant, le jeu tourne "en mémoire". 
-    // Si tu n'as pas encore de fenêtre d'affichage pour Game, 
-    // tu verras juste les messages de game.cpp et map.cpp dans la console.
 }

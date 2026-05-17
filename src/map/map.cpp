@@ -628,9 +628,9 @@ bool Map::_try_place_players(std::vector<std::pair<int, int>>& spawn_points) {
       if (!too_close) {
         spawn_points.push_back({r, c});
 
-        // On ajoute un colon et un warrior sur la case en question
+        // On ajoute une ville et un warrior sur la case en question
         add_unit_to_case(&_cases[r][c], UnitName::Warrior, player);
-        add_unit_to_case(&_cases[r][c], UnitName::Settler, player);
+        _cases[r][c].create_city(player);
 
         placed = true;
       }

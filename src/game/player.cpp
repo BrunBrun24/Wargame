@@ -113,7 +113,7 @@ void Player::initialise_turn() {
 
   // 2. Réinitialise les PMs de chaque unité ET les passes en attente d'ordre
   for (Unit* unit : this->_units) {
-    unit->set_PM(UNIT_STATS.at(unit->get_name()).PM);
+    unit->reset_PM(UNIT_STATS.at(unit->get_name()).PM);
 
     if (!unit->is_active()) {
       unit->switch_active();
@@ -201,25 +201,12 @@ Case* Player::get_city_capital() {
   return nullptr;
 }
 
-void Player::start_turn() {
-  // 1. Vérification des productions des villes
-  // this->_check_city_productions();
+// void Player::start_turn() {
+//   // 1. Vérification des productions des villes
+//   this->_check_city_productions();
 
-  // 2. Vérification de la recherche technologique
-  // this->_check_active_research();
-}
-
-// void Player::process_turn_actions() {
-//   // Tant qu'il reste au moins une unité avec des points de mouvement ou des
-//   // actions
-//   while (this->_has_active_units()) {
-//     // TODO
-//     // Ici, on attend l'entrée utilisateur pour sélectionner une unité et lui
-//     // donner un ordre
-//     this->__handle_unit_selection_and_orders();
-//   }
-
-//   std::cout << "Toutes les unités sont inactives. Fin du tour." << std::endl;
+//   // 2. Vérification de la recherche technologique
+//   this->_check_active_research();
 // }
 
 bool Player::has_active_units() const {

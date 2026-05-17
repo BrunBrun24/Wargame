@@ -90,11 +90,11 @@ class Unit {
 
   /** @brief Retourne une liste d'actions possibles que l'unité peut effectuer
    */
-  virtual std::vector<UnitAction> get_unit_actions();
+  virtual std::vector<UnitAction> get_unit_actions() const;
 
   /** @brief Récupère l'ordre donné par l'utilisateur et si elle est réalisable
    * pour ce tour alors l'exécuter sinon la mettre dans la file d'attente. */
-  void get_order(UnitAction action, Case* target_case = nullptr);
+  void get_order(UnitAction action);
 
   /** @brief Applique immédiatement les effets d'une action sur le jeu. */
   void execute_action(const UnitAction action);
@@ -113,7 +113,7 @@ class Unit {
   UnitStats get_stats() const { return stats; }
   std::vector<TerrainsType> get_allow_terrain() const { return allow_terrain; }
 
-  void set_PM(const double n) {
+  void set_PM(double n) {
     this->stats.PM = std::max(0.0, this->stats.PM - n);
     if (this->stats.PM == 0) {
       this->switch_active();
@@ -123,6 +123,10 @@ class Unit {
   void set_PM_null() {
     this->stats.PM = 0;
     this->switch_active();
+  }
+
+  void reset_PM(double n) {
+    this->stats.PM = n;
   }
 
   int get_id() const { return id; }
