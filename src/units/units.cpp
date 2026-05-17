@@ -407,8 +407,8 @@ double Unit::get_modified_strength_vs(const Unit* opponent,
     total_bonus += data.city.defense;
   }
 
-  // 7. Calcul final : Force * (1 + Somme des Bonus) * Ratio HP
-  return this->get_stats().power * (1.0 + total_bonus) * hp_ratio;
+  // 7. Calcul final : Force * (1 + Somme des Bonus) * (1 + Ratio HP)
+  return this->get_stats().power * (1.0 + total_bonus) * (1.0 + hp_ratio);
 }
 
 bool Unit::predict_victory_chance(const Unit* defender) const {
