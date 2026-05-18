@@ -197,6 +197,16 @@ void Case::create_city(Player* player) {
   player->add_city(_city);
 }
 
+bool Case::is_adjacent_to_water() const {
+  // 1. Vérification des voisins immédiats
+  for (Case* neighbor : _neighbors) {
+    if (neighbor->get_terrain().type == TerrainsType::Coast) {
+      return true;
+    }
+  }
+  return false;
+}
+
 Yields Case::get_total_yields() const {
   // 1. Rendement de la case
   Yields total = get_base_yields();

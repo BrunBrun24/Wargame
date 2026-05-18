@@ -765,6 +765,12 @@ bool Unit::can_build_improvement(ImprovementName name) {
     return false;
   }
 
+  // On ne peut pas construire un aménagement sur le terrain d'une autre
+  // personne
+  if (this->get_player() != this->get_case_unit()->get_player()) {
+    return false;
+  }
+
   // 2. On regarde s'il y a une ressource sur la case-
   Terrain terrain = this->case_unit->get_terrain();
   if (terrain.resource != ResourceName::None) {

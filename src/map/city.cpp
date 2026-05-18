@@ -267,11 +267,21 @@ ProductionAvailable City::production_available() const {
 
   // On définit la borne max (Explorer est le dernier élément)
   const int max_unit_idx = static_cast<int>(UnitName::Explorer);
+  bool adjacent_to_water = this->get_city_case()->is_adjacent_to_water();
 
   for (int i = 1; i <= max_unit_idx; ++i) {
     UnitName unit = static_cast<UnitName>(i);
 
-    // 1. Vérifier les technologies requises
+    // 1. On vérifie si la ville possède une case adjacente au bord de l'eau
+    if (!adjacent_to_water) {
+      // Si c'est le cas alors on ne peut pas créer des unités qui sont des
+      // unités maritimes
+      if (UNIT_TYPE.at(unit) == UnitType::Naval) {
+        break;
+      }
+    }
+
+    // 2. Vérifier les technologies requises
     const auto& required_techs = UNIT_TECHNOLOGY.at(unit).technologies;
     const auto& player_techs = this->get_player()->get_technologies();
 
@@ -285,7 +295,7 @@ ProductionAvailable City::production_available() const {
       }
     }
 
-    // 2. Vérifier les ressources requises
+    // 3. Vérifier les ressources requises
     bool has_all_resources = true;
     for (ResourceName resource_req : UNIT_TECHNOLOGY.at(unit).resource) {
       // On cherche la ressource dans l'inventaire du joueur
@@ -295,7 +305,7 @@ ProductionAvailable City::production_available() const {
       }
     }
 
-    // 3. Si toutes les conditions sont remplies, on l'ajoute
+    // 4. Si toutes les conditions sont remplies, on l'ajoute
     if (has_all_techs) {
       pa.units.push_back(unit);
     }
@@ -307,14 +317,25 @@ ProductionAvailable City::production_available() const {
   for (int i = 1; i <= max_building_idx; ++i) {
     BuildingName building = static_cast<BuildingName>(i);
 
-    // 1. Vérifier si le bâtiment est déjà construit dans la ville
+    // 1. On vérifie si la ville possède une case adjacente au bord de l'eau
+    if (!adjacent_to_water) {
+      // Si c'est le cas alors on ne peut pas créer de bâtiments qui destinés à
+      // être au bord de l'eau
+      if (building == BuildingName::Drydock ||
+          building == BuildingName::Harbor ||
+          building == BuildingName::Lighthouse) {
+        break;
+      }
+    }
+
+    // 2. Vérifier si le bâtiment est déjà construit dans la ville
     auto it_b =
         std::find(_data.buildings.begin(), _data.buildings.end(), building);
     if (it_b != _data.buildings.end()) {
       continue;  // Déjà construit, on passe au bâtiment suivant
     }
 
-    // 2. Vérifier les technologies requises
+    // 3. Vérifier les technologies requises
     const auto& required_techs =
         BuildingDatabase::get_info(building).required_tech;
     const auto& player_techs = this->get_player()->get_technologies();
@@ -329,7 +350,7 @@ ProductionAvailable City::production_available() const {
       }
     }
 
-    // 3. Si toutes les conditions sont remplies, on l'ajoute
+    // 4. Si toutes les conditions sont remplies, on l'ajoute
     if (has_all_techs) {
       pa.buildings.push_back(building);
     }

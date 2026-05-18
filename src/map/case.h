@@ -64,6 +64,10 @@ class Case {
   bool is_valid_for_city() const;
   void create_city(Player* player);
 
+  /** @brief Vérifie si la case actuelle possède une case adjacente au bord de
+   * l'eau) */
+  bool is_adjacent_to_water() const;
+
   /** @brief Calcule le rendement total de la case (Terrain + Ressource +
    * Amélioration) */
   Yields get_total_yields() const;
