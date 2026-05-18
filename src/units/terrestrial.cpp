@@ -55,7 +55,12 @@ bool Terrestrial::can_build_city() const {
     return false;
   }
 
-  // 2. On délègue la vérification de distance à la case
+  // 2. On vérifie que le territoire n'appartient pas à un autre joueur
+  if (this->get_player() != this->get_case_unit()->get_player()) {
+    return false;
+  }
+
+  // 3. On délègue la vérification de distance à la case
   return this->case_unit->is_valid_for_city();
 }
 

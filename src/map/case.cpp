@@ -164,7 +164,7 @@ bool Case::is_valid_for_city() const {
     for (Case* second_neighbor : neighbor->get_neighbors()) {
       if (second_neighbor->get_city() != nullptr) return false;
 
-      // 4. Vérification des voisins des voisins ... (distance 3)
+      // 4. Vérification des voisins des voisins (distance 3)
       for (Case* third_neighbour : neighbor->get_neighbors()) {
         if (third_neighbour->get_city() != nullptr) return false;
       }
