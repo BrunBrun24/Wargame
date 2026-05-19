@@ -21,6 +21,7 @@ class Game {
 
   /** @return Le pointeur vers le joueur actif. */
   Player* get_current_player();
+  std::vector<Player*> get_players() const { return _players_list; }
 
   Map* getMap() { return &_map; }
 

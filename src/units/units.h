@@ -100,7 +100,7 @@ class Unit {
   void execute_action(const UnitAction action);
 
   /** @brief Gère la progression de la file d'ordres au fil des tours. */
-  void execute_orders();
+  void process_pending_orders();
 
   virtual void found_city() {};
   virtual void chop_down_forest() {};

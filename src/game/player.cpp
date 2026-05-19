@@ -100,9 +100,21 @@ int Player::depense_gold() const {
 }
 
 void Player::initialise_turn() {
+  // 1. On traite les ordres en attente de TOUTES les unités
+  for (Unit* unit : _units) {
+    // On ne traite que les unités qui ont des ordres en attente
+    if (unit->contains_pending_orders()) {
+      unit->process_pending_orders();
+    } else {
+      // Si pas d'ordre, on s'assure qu'elle est prête pour l'utilisateur
+      if (!unit->is_active()) unit->switch_active();
+      unit->reset_PM(UNIT_STATS.at(unit->get_name()).PM);
+    }
+  }
+
   int gold_yield = 0;
 
-  // 1. Mets à jour la production des villes et l'income du joueur
+  // 2. Mets à jour la production des villes et l'income du joueur
   for (City* city : this->_cities) {
     city->update_yields();
     city->update_city();
@@ -111,7 +123,7 @@ void Player::initialise_turn() {
     gold_yield += data.commerce.yield;
   }
 
-  // 2. Réinitialise les PMs de chaque unité ET les passes en attente d'ordre
+  // 3. Réinitialise les PMs de chaque unité ET les passes en attente d'ordre
   for (Unit* unit : this->_units) {
     unit->reset_PM(UNIT_STATS.at(unit->get_name()).PM);
 
@@ -120,7 +132,7 @@ void Player::initialise_turn() {
     }
   }
 
-  // 3. Mets à jour l'income en or pour l'affichage
+  // 4. Mets à jour l'income en or pour l'affichage
   this->_income.gold = gold_yield - this->depense_gold();
 }
 

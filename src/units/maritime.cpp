@@ -6,15 +6,16 @@
 #include "resource_database.h"
 
 Maritime::Maritime(UnitName name, Player* player, Case* case_unit)
-    : Unit(name, player, case_unit,
-           {TerrainsType::Coast, TerrainsType::Ocean}) {}
+    : Unit(name, player, case_unit, {TerrainsType::Coast, TerrainsType::Ocean}) {
+      // On défnie les unités ires pouvant transporter des unités
+    }
 
-std::vector<UnitAction> Maritime::get_unit_actions(const Unit* unit) const {
+std::vector<UnitAction> Maritime::get_unit_actions() const {
   std::vector<UnitAction> available_actions = Unit::get_unit_actions();
-  Case* unit_case = unit->get_case_unit();
+  Case* unit_case = this->get_case_unit();
   Terrain terrain = unit_case->get_terrain();
 
-  if (unit->get_name() == UnitName::WorkBoat) {
+  if (this->get_name() == UnitName::WorkBoat) {
     // On regarde s'il y a une ressource
     if (terrain.resource != ResourceName::None &&
         terrain.improvement == ImprovementName::None) {

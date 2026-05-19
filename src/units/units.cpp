@@ -188,13 +188,20 @@ Course Unit::can_move_to(const Case* target_case) {
 
     for (Case* neighbor : current->get_neighbors()) {
       // Vérification des types de terrain autorisés
-      if (!this->find_terrain(neighbor->get_terrain().type)) continue;
+      if (!this->find_terrain(neighbor->get_terrain().type)) {
+        // if (neighbor.) {
+
+        // } else {
+        //   continue;
+        // }
+        continue;
+      };
 
       // Les montagnes sont infranchissables pour les unités non-aériennes
       if (neighbor->get_terrain().elevation == TerrainElevation::Mountain)
         continue;
 
-      // Gestion du blocage par les unités ennemies (ZOC)
+      // Gestion du blocage par les unités ennemies
       bool is_blocked = false;
       for (Unit* u : neighbor->get_units()) {
         if (u->get_player() != this->get_player() && u->is_military()) {
@@ -674,45 +681,26 @@ void Unit::execute_action(UnitAction action) {
   }
 }
 
-void Unit::execute_orders() {
-  // Si l'unité a des ordres à effectuer
-  if (this->orders.action != UnitAction::None) {
-    UnitAction action = this->orders.action;
-    switch (action) {
-      // 1. C'est une construction d'un aménagement
-      case UnitAction::BuildRoad:
-      case UnitAction::BuildFarm:
-      case UnitAction::BuildMine:
-      case UnitAction::BuildCamp:
-      case UnitAction::BuildCottage:
-      case UnitAction::BuildForestPreserve:
-      case UnitAction::BuildPasture:
-      case UnitAction::BuildPlantation:
-      case UnitAction::BuildQuarry:
-      case UnitAction::BuildLumberMill:
-      case UnitAction::ChopDownForest:
-      case UnitAction::BuildFishingBoats:
-      case UnitAction::BuildWatermill:
-      case UnitAction::BuildWell:
-      case UnitAction::BuildWorkshop:
-      case UnitAction::BuildWinery:
-      case UnitAction::BuildWindmill:
-      case UnitAction::BuildWhalingBoats:
-      case UnitAction::BuildOffshorePlatform:
-      case UnitAction::BuildFort:
-        // On retire l'un des tours de constuctions
-        this->orders.turns--;
-        // S'il n'y a plus d'odre alors la construction est terminé
-        if (this->orders.turns == 0) {
-          execute_action(action);
-          this->orders = {};
-        }
-        break;
+void Unit::process_pending_orders() {
+  // 1. Si l'unité n'a pas d'ordres ou n'est pas active, on ne fait rien
+  if (this->orders.action == UnitAction::None) return;
 
-      case UnitAction::GoToMove:
-        go_to_move(this->orders.target);
-        break;
+  // 2. Gestion du déplacement long
+  if (this->orders.action == UnitAction::GoToMove &&
+      this->orders.target != nullptr) {
+    // On réutilise ta logique de déplacement existante
+    this->go_to_move(this->orders.target);
+  }
+
+  // 3. Gestion des aménagements (Worker) qui prennent plusieurs tours
+  if (this->orders.turns > 0) {
+    this->orders.turns--;
+    if (this->orders.turns == 0) {
+      // Terminer la construction (ex: BuildFarm)
+      this->build_improvement(action_to_improvement(this->orders.action));
+      this->orders.action = UnitAction::None;
     }
+    this->set_PM_null();  // Un ouvrier qui travaille ne peut pas bouger
   }
 }
 

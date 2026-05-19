@@ -12,12 +12,11 @@ Terrestrial::Terrestrial(UnitName name, Player* player, Case* case_unit)
            {TerrainsType::Desert, TerrainsType::Grassland, TerrainsType::Ice,
             TerrainsType::Plains, TerrainsType::Tundra}) {}
 
-std::vector<UnitAction> Terrestrial::get_unit_actions(const Unit* unit) const {
+std::vector<UnitAction> Terrestrial::get_unit_actions() const {
   std::vector<UnitAction> available_actions = Unit::get_unit_actions();
-  Case* unit_case = unit->get_case_unit();
+  Case* unit_case = this->get_case_unit();
   Terrain terrain = unit_case->get_terrain();
-  UnitName name = unit->get_name();
-  qDebug() << "METHODE !!!";
+  UnitName name = this->get_name();
 
   // Si c'est un ouvrier
   if (name == UnitName::Worker) {
@@ -33,7 +32,6 @@ std::vector<UnitAction> Terrestrial::get_unit_actions(const Unit* unit) const {
                                       .resource_bonus.unit_action);
     }
   } else if (name == UnitName::Settler) {
-    qDebug() << "COLON !!!";
     // Si c'est un colon
     if (this->can_build_city()) {
       available_actions.push_back(UnitAction::BuildCity);

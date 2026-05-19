@@ -33,7 +33,7 @@ void UnitActionsWidget::_clear_layout() {
 }
 
 void UnitActionsWidget::_setup_ui(const Unit* unit, const Case* currentCase) {
-  // 1. Nettoyage et initialisation du layout
+  // Nettoyage et initialisation du layout
   if (layout()) {
     QLayoutItem* item;
     while ((item = layout()->takeAt(0)) != nullptr) {
@@ -60,127 +60,132 @@ void UnitActionsWidget::_setup_ui(const Unit* unit, const Case* currentCase) {
     switch (action) {
       case UnitAction::BuildCity:
         qDebug() << "VILLE";
-        _create_action_button("Fonder Ville", UnitAction::BuildCity,
+        _create_action_button("Found city", UnitAction::BuildCity,
                               actionLayout);
         break;
 
       case UnitAction::GoToMove:
-        _create_action_button("Se déplacer", UnitAction::GoToMove,
-                              actionLayout);
+        _create_action_button("Go to move", UnitAction::GoToMove, actionLayout);
         break;
 
       case UnitAction::Sleep:
-        _create_action_button("Dormir", UnitAction::Sleep, actionLayout);
+        _create_action_button("Sleep", UnitAction::Sleep, actionLayout);
         break;
 
       case UnitAction::Wake:
-        _create_action_button("Se réveiller", UnitAction::Wake, actionLayout);
+        _create_action_button("Wake", UnitAction::Wake, actionLayout);
         break;
 
       case UnitAction::Fortify:
-        _create_action_button("Se retrancher", UnitAction::Fortify,
-                              actionLayout);
+        _create_action_button("Fortify", UnitAction::Fortify, actionLayout);
         break;
 
       case UnitAction::Delete:
-        _create_action_button("Supprimer", UnitAction::Delete, actionLayout);
+        _create_action_button("Delete", UnitAction::Delete, actionLayout);
         break;
 
       case UnitAction::Pillage:
-        _create_action_button("Piller", UnitAction::Pillage, actionLayout);
+        _create_action_button("Pillage", UnitAction::Pillage, actionLayout);
         break;
 
       case UnitAction::BuildRoad:
-        _create_action_button("Route", UnitAction::BuildRoad, actionLayout);
+        _create_action_button("Build Road", UnitAction::BuildRoad,
+                              actionLayout);
         break;
 
       case UnitAction::BuildFarm:
-        _create_action_button("Ferme", UnitAction::BuildFarm, actionLayout);
+        _create_action_button("Build Farm", UnitAction::BuildFarm,
+                              actionLayout);
         break;
 
       case UnitAction::BuildMine:
-        _create_action_button("Mine", UnitAction::BuildMine, actionLayout);
+        _create_action_button("Build Mine", UnitAction::BuildMine,
+                              actionLayout);
         break;
 
       case UnitAction::BuildCamp:
-        _create_action_button("Camp", UnitAction::BuildCamp, actionLayout);
+        _create_action_button("Build Camp", UnitAction::BuildCamp,
+                              actionLayout);
         break;
 
       case UnitAction::BuildCottage:
-        _create_action_button("Village", UnitAction::BuildCottage,
+        _create_action_button("Build Cottage", UnitAction::BuildCottage,
                               actionLayout);
         break;
 
       case UnitAction::BuildForestPreserve:
-        _create_action_button("Cabane", UnitAction::BuildForestPreserve,
-                              actionLayout);
+        _create_action_button("Build Forest Preserve",
+                              UnitAction::BuildForestPreserve, actionLayout);
         break;
 
       case UnitAction::BuildPasture:
-        _create_action_button("Pâturage", UnitAction::BuildPasture,
+        _create_action_button("Build Pasture", UnitAction::BuildPasture,
                               actionLayout);
         break;
 
       case UnitAction::BuildPlantation:
-        _create_action_button("Plantation", UnitAction::BuildPlantation,
+        _create_action_button("Build Plantation", UnitAction::BuildPlantation,
                               actionLayout);
         break;
 
       case UnitAction::BuildQuarry:
-        _create_action_button("Quarry", UnitAction::BuildQuarry, actionLayout);
+        _create_action_button("Build Quarry", UnitAction::BuildQuarry,
+                              actionLayout);
         break;
 
       case UnitAction::BuildLumberMill:
-        _create_action_button("Scierie", UnitAction::BuildLumberMill,
+        _create_action_button("Build Lumber Mill", UnitAction::BuildLumberMill,
                               actionLayout);
         break;
 
       case UnitAction::ChopDownForest:
-        _create_action_button("Enlever les arbres", UnitAction::ChopDownForest,
+        _create_action_button("Chop Down Forest", UnitAction::ChopDownForest,
                               actionLayout);
         break;
 
       case UnitAction::BuildFishingBoats:
-        _create_action_button("Pêche", UnitAction::BuildFishingBoats,
-                              actionLayout);
+        _create_action_button("Build Fishing Boats",
+                              UnitAction::BuildFishingBoats, actionLayout);
         break;
 
       case UnitAction::BuildWatermill:
-        _create_action_button("Moulin à eau", UnitAction::BuildWatermill,
+        _create_action_button("Build Watermill", UnitAction::BuildWatermill,
                               actionLayout);
         break;
 
       case UnitAction::BuildWell:
-        _create_action_button("Well", UnitAction::BuildWell, actionLayout);
+        _create_action_button("Build Well", UnitAction::BuildWell,
+                              actionLayout);
         break;
 
       case UnitAction::BuildWorkshop:
-        _create_action_button("Atelier", UnitAction::BuildWorkshop,
+        _create_action_button("Build Workshop", UnitAction::BuildWorkshop,
                               actionLayout);
         break;
 
       case UnitAction::BuildWinery:
-        _create_action_button("Exploitation vinicole", UnitAction::BuildWinery,
+        _create_action_button("Build Winery", UnitAction::BuildWinery,
                               actionLayout);
         break;
 
       case UnitAction::BuildWindmill:
-        _create_action_button("Moulin à vent", UnitAction::BuildWindmill,
+        _create_action_button("Build Windmill", UnitAction::BuildWindmill,
                               actionLayout);
         break;
 
       case UnitAction::BuildWhalingBoats:
-        _create_action_button("Baleiniers", UnitAction::BuildWhalingBoats,
-                              actionLayout);
+        _create_action_button("Build Whaling Boats",
+                              UnitAction::BuildWhalingBoats, actionLayout);
         break;
 
       case UnitAction::BuildOffshorePlatform:
-        _create_action_button("Plate-forme offshore",
+        _create_action_button("Build Offshore Platform",
                               UnitAction::BuildOffshorePlatform, actionLayout);
         break;
 
       case UnitAction::BuildFort:
-        _create_action_button("Fort", UnitAction::BuildFort, actionLayout);
+        _create_action_button("Build Fort", UnitAction::BuildFort,
+                              actionLayout);
         break;
     }
   }

@@ -1,5 +1,6 @@
 #include "city.h"
 
+#include <QDebug>
 #include <algorithm>
 #include <iostream>
 
@@ -27,9 +28,8 @@ City::City(Case* city_case, Player* player, bool is_capital)
   // Lors de la création de la ville, on trace ses frontières
   this->check_for_expansion();
 
-  // Appelez la méthode pour que l'utilisateur choisisse ce qu'il veut
-  // construire dans la ville
-  // TODO
+  // On signale que cette nouvelle ville a besoin d'une production
+  emit productionRequired(this, this->production_available());
 }
 
 City::~City() {
@@ -233,124 +233,115 @@ void City::update_culture() {
 }
 
 void City::update_production() {
-  // On accumule la production générée par la ville
+  // Si la file est vide, on demande une production et on arrête
+  if (_build_queue.empty()) {
+    emit productionRequired(this, this->production_available());
+    return;
+  }
+
   _data.production.accumulated += _data.production.yield;
+  ProductionOrder& element = this->_build_queue.front();
 
-  // On récupère la production actuelle
-  ProductionOrder element = this->_build_queue.front();
-
-  // On regarde si la production est finie
   if (_data.production.accumulated >= element.cost) {
-    // On regarde si la production concernait une unité ou un bâtiment
     if (element.unit != UnitName::None) {
       Unit* new_unit = Unit::create_unit(element.unit, _player, _city_case);
       this->_city_case->add_unit(new_unit);
-      element.unit = UnitName::None;
-    } else {
-      // On ajoute le nouveau bâtiment à la ville
+      qDebug() << "Unité ajouté";
+    } else if (element.building != BuildingName::None) {
       this->_data.buildings.push_back(element.building);
-      element.building = BuildingName::None;
+      qDebug() << "Bâtiment ajouté";
     }
 
-    // On retire la production
     this->_build_queue.pop();
-
-    // On réinitialise l'accumulation de la production
     this->_data.production.accumulated = 0;
 
-    // On demande au joueur la nouvelle production
+    // Si la file est vide, on peut émettre productionRequired
+    if (_build_queue.empty()) {
+      emit productionRequired(this, this->production_available());
+    }
   }
 }
 
 ProductionAvailable City::production_available() const {
   ProductionAvailable pa;
-
-  // On définit la borne max (Explorer est le dernier élément)
-  const int max_unit_idx = static_cast<int>(UnitName::Explorer);
   bool adjacent_to_water = this->get_city_case()->is_adjacent_to_water();
+  const auto& player_techs = this->get_player()->get_technologies();
+  auto player_resources = this->get_player()->get_resources();
+
+  // --- SECTION UNITÉS ---
+  const int max_unit_idx = static_cast<int>(UnitName::Explorer);
 
   for (int i = 1; i <= max_unit_idx; ++i) {
     UnitName unit = static_cast<UnitName>(i);
 
-    // 1. On vérifie si la ville possède une case adjacente au bord de l'eau
+    // 1. Restriction Maritime : Utiliser CONTINUE et non break
     if (!adjacent_to_water) {
-      // Si c'est le cas alors on ne peut pas créer des unités qui sont des
-      // unités maritimes
-      if (UNIT_TYPE.at(unit) == UnitType::Naval) {
-        break;
+      if (UNIT_TYPE.at(unit) == UnitType::Naval || unit == UnitName::WorkBoat) {
+        continue;  // On saute cette unité, mais on continue la boucle
       }
     }
 
-    // 2. Vérifier les technologies requises
+    // 2. Vérifier les technologies
     const auto& required_techs = UNIT_TECHNOLOGY.at(unit).technologies;
-    const auto& player_techs = this->get_player()->get_technologies();
-
     bool has_all_techs = true;
     for (TechnologyName tech : required_techs) {
-      auto it_t = std::find(player_techs.begin(), player_techs.end(), tech);
+      if (std::find(player_techs.begin(), player_techs.end(), tech) ==
+          player_techs.end()) {
+        has_all_techs = false;
+        break;  // Ici le break est bon : il quitte la petite boucle for des
+                // techs
+      }
+    }
+    if (!has_all_techs) continue;
 
-      if (it_t == player_techs.end()) {
-        has_all_techs = false;  // Une technologie manque
+    // 3. Vérifier les ressources (Correction : Ajout de la vérification)
+    bool has_all_resources = true;
+    for (ResourceName resource_req : UNIT_TECHNOLOGY.at(unit).resource) {
+      if (player_resources[resource_req] <= 0) {
+        has_all_resources = false;
         break;
       }
     }
 
-    // 3. Vérifier les ressources requises
-    bool has_all_resources = true;
-    for (ResourceName resource_req : UNIT_TECHNOLOGY.at(unit).resource) {
-      // On cherche la ressource dans l'inventaire du joueur
-      if (this->get_player()->get_resources()[resource_req] <= 0) {
-        has_all_resources = false;
-        break;  // Il manque au moins une ressource
-      }
-    }
-
-    // 4. Si toutes les conditions sont remplies, on l'ajoute
-    if (has_all_techs) {
+    // 4. Ajout final
+    if (has_all_resources) {
       pa.units.push_back(unit);
     }
   }
 
-  // On définit la borne max (Walls est le dernier élément)
+  // --- SECTION BÂTIMENTS ---
   const int max_building_idx = static_cast<int>(BuildingName::Walls);
 
   for (int i = 1; i <= max_building_idx; ++i) {
     BuildingName building = static_cast<BuildingName>(i);
 
-    // 1. On vérifie si la ville possède une case adjacente au bord de l'eau
+    // 1. Restriction Maritime : Utiliser CONTINUE
     if (!adjacent_to_water) {
-      // Si c'est le cas alors on ne peut pas créer de bâtiments qui destinés à
-      // être au bord de l'eau
       if (building == BuildingName::Drydock ||
           building == BuildingName::Harbor ||
           building == BuildingName::Lighthouse) {
-        break;
+        continue;
       }
     }
 
-    // 2. Vérifier si le bâtiment est déjà construit dans la ville
-    auto it_b =
-        std::find(_data.buildings.begin(), _data.buildings.end(), building);
-    if (it_b != _data.buildings.end()) {
-      continue;  // Déjà construit, on passe au bâtiment suivant
+    // 2. Déjà construit
+    if (std::find(_data.buildings.begin(), _data.buildings.end(), building) !=
+        _data.buildings.end()) {
+      continue;
     }
 
-    // 3. Vérifier les technologies requises
+    // 3. Technologies
     const auto& required_techs =
         BuildingDatabase::get_info(building).required_tech;
-    const auto& player_techs = this->get_player()->get_technologies();
-
     bool has_all_techs = true;
     for (TechnologyName tech : required_techs) {
-      auto it_t = std::find(player_techs.begin(), player_techs.end(), tech);
-
-      if (it_t == player_techs.end()) {
-        has_all_techs = false;  // Une technologie manque
+      if (std::find(player_techs.begin(), player_techs.end(), tech) ==
+          player_techs.end()) {
+        has_all_techs = false;
         break;
       }
     }
 
-    // 4. Si toutes les conditions sont remplies, on l'ajoute
     if (has_all_techs) {
       pa.buildings.push_back(building);
     }

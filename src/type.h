@@ -5,6 +5,7 @@
 #include <vector>
 
 class Case;
+class Unit;
 
 enum class TerrainsType {
   Coast,
@@ -386,6 +387,7 @@ extern const std::map<UnitName, PowerBonus> UNIT_POWER_BONUS;
 
 enum class UnitAction {
   None,
+  StopActions,
 
   // --- All ---
   Sleep,
@@ -394,7 +396,7 @@ enum class UnitAction {
   GoToMove,
 
   // --- Unité Terrestre ---
-  Fortify,    // Mise en garde
+  Fortify,  // Mise en garde
   Pillage,
 
   // --- Settler ---
@@ -475,4 +477,9 @@ struct Course {
   bool is_possible;
   std::vector<Case*> distance_traveled;
   double PM;  // PM utilisé lors du trajet
+};
+
+struct CapacityTransport {
+  int size = 0;
+  std::vector<Unit*> units;
 };

@@ -1,3 +1,6 @@
+#pragma once
+
+#include <QObject>
 #include <queue>
 #include <string>
 #include <vector>
@@ -60,7 +63,9 @@ struct ProductionAvailable {
   std::vector<BuildingName> buildings;
 };
 
-class City {
+class City : public QObject {
+  Q_OBJECT
+
  public:
   City() = default;
   City(Case* city_case, Player* player, bool is_capital);
@@ -105,6 +110,9 @@ class City {
 
   Player* get_player() const { return _player; }
   Case* get_city_case() const { return _city_case; }
+
+ signals:
+  void productionRequired(City* city, ProductionAvailable options);
 
  private:
   static int _id_counter;

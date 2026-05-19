@@ -1,6 +1,7 @@
 #pragma once
 
 #include "units.h"
+#include "../type.h"
 
 class Maritime : public Unit {
  public:
@@ -8,5 +9,8 @@ class Maritime : public Unit {
 
   /** @brief Retourne une liste d'actions possibles que l'unité peut effectuer
    */
-  virtual std::vector<UnitAction> get_unit_actions(const Unit* unit) const;
+  std::vector<UnitAction> get_unit_actions() const override;
+
+  private:
+    CapacityTransport _capacity_transport;
 };

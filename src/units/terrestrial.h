@@ -8,7 +8,7 @@ class Terrestrial : public Unit {
 
   /** @brief Retourne une liste d'actions possibles que l'unité peut effectuer
    */
-  virtual std::vector<UnitAction> get_unit_actions(const Unit* unit) const;
+  std::vector<UnitAction> get_unit_actions() const override;
 
   /**
    * @brief Vérifie si l'unité peut fonder une ville sur sa case actuelle.

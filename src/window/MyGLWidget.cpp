@@ -139,9 +139,10 @@ void MyGLWidget::renderGame(float aspect) {
         // OPTIONNEL : On peut éclaircir un peu la couleur pour le remplissage
         // pour que ce soit moins agressif que le contour
         glColor3f(rgb[0], rgb[1], rgb[2]);
-      } else if (case_actuelle.get_terrain().elevation == TerrainElevation::Mountain){
-        glColor3f(0.0f,0.0f,0.0f);
-      }else if (case_actuelle.get_terrain().type == TerrainsType::Coast) {
+      } else if (case_actuelle.get_terrain().elevation ==
+                 TerrainElevation::Mountain) {
+        glColor3f(0.0f, 0.0f, 0.0f);
+      } else if (case_actuelle.get_terrain().type == TerrainsType::Coast) {
         glColor3f(0.01953125f, 0.9765625f, 0.75390625f);
       } else if (case_actuelle.get_terrain().type == TerrainsType::Desert) {
         glColor3f(0.99609375f, 0.92578125f, 0.30078125f);
@@ -690,6 +691,7 @@ void MyGLWidget::dessinerArmored(float cx, float cy, float radius,
 void MyGLWidget::dessinerDemiCerclePlein(float cx, float cy, float radius,
                                          float aspect, float directionRad) {
   int nbSegments = 30;  // Nombre de triangles pour lisser la courbe
+  float rayonReduit = radius * 0.5f;
 
   // Pour un demi-cercle orienté, on commence à (Direction - 90°)
   float startAngle = directionRad - (M_PI / 2.0f);
@@ -702,15 +704,30 @@ void MyGLWidget::dessinerDemiCerclePlein(float cx, float cy, float radius,
   // Tous les triangles se rejoignent ici pour remplir la forme
   glVertex2f(cx / aspect, cy);
 
-  // --- LES POINTS DE L'ARC ---
+  // --- LES POINTS DE L'ARC (REMPLISSAGE) ---
   for (int i = 0; i <= nbSegments; ++i) {
     // Calcul de l'angle pour ce point précis de l'arc
     float angle = startAngle + (float)i / (float)nbSegments * ouverture;
 
-    // Calcul des coordonnées X et Y
-    // ATTENTION : n'oublie pas le /aspect uniquement sur le X !
-    float x_point = (cx + radius * cos(angle)) / aspect;
-    float y_point = cy + radius * sin(angle);
+    // Calcul des coordonnées X et Y avec le rayon réduit
+    float x_point = (cx + rayonReduit * cos(angle)) / aspect;
+    float y_point = cy + rayonReduit * sin(angle);
+
+    glVertex2f(x_point, y_point);
+  }
+  glEnd();
+
+  // --- LES POINTS DE L'ARC (CONTOUR) ---
+  glColor3f(0.0f, 0.0f, 0.0f);
+  glLineWidth(2.0f);
+  glBegin(GL_LINE_LOOP);
+  for (int i = 0; i <= nbSegments; ++i) {
+    // Calcul de l'angle pour ce point précis de l'arc
+    float angle = startAngle + (float)i / (float)nbSegments * ouverture;
+
+    // Calcul des coordonnées X et Y avec le rayon réduit
+    float x_point = (cx + rayonReduit * cos(angle)) / aspect;
+    float y_point = cy + rayonReduit * sin(angle);
 
     glVertex2f(x_point, y_point);
   }
@@ -804,7 +821,6 @@ void MyGLWidget::mousePressEvent(QMouseEvent* event) {
   // Si aucune action alors :
   if (Action_en_cours == UnitAction::None ||
       Action_en_cours == UnitAction::BuildCity) {
-
     GridCoord coord = getCaseAtMouse(event->pos());
     if (coord.isValid) {
       handleUnitSelection(coord);
@@ -827,9 +843,10 @@ void MyGLWidget::handleUnitSelection(GridCoord coord) {
   Case* clickedCase = &(_mapData->get_cases().at(coord.r).at(coord.q));
   Player* currentPlayer = _gamePtr->get_current_player();
 
-  if ((_unitControl && _unitControl->get_case() == clickedCase) || (currentPlayer != clickedCase->get_units().at(0)->get_player())) {
+  if ((_unitControl && _unitControl->get_case() == clickedCase) ||
+      (currentPlayer != clickedCase->get_units().at(0)->get_player())) {
     qDebug() << "ICI ";
-    return;  
+    return;
   }
 
   if (_unitControl) {
@@ -847,24 +864,25 @@ void MyGLWidget::handleUnitSelection(GridCoord coord) {
 
     if (!selectableUnits.empty()) {
       _unitControl = new UnitControlPanel(this, selectableUnits, clickedCase);
-      connect(_unitControl, &UnitControlPanel::Close_Control_Panel, this, [this](){
-        _unitControl->hide();
-        _unitControl->deleteLater();
-        _unitControl = nullptr;
-        qDebug() << "On close l'unitControl";
-      });
+      connect(_unitControl, &UnitControlPanel::Close_Control_Panel, this,
+              [this]() {
+                _unitControl->hide();
+                _unitControl->deleteLater();
+                _unitControl = nullptr;
+                qDebug() << "On close l'unitControl";
+              });
       connect(_unitControl, &UnitControlPanel::actionRelayed, this,
-          [this](UnitAction action) {
-            Action_en_cours = action;
-            qDebug() << "ON RECUPERE BIEN L'ACTION";
-          });
+              [this](UnitAction action) {
+                Action_en_cours = action;
+                qDebug() << "ON RECUPERE BIEN L'ACTION";
+              });
     } else {
       qDebug() << "[Selection] Aucune unité active/jouable sur cette case.";
     }
   } else {
     qDebug() << "[Selection] Case vide.";
   }
-  
+
   update();
 }
 
